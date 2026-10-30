@@ -1,0 +1,9 @@
+{
+  "name": "wafbench-mock-internal",
+  "version": "1.0.0",
+  "description": "Mock internal HTTP service for SSRF testing",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

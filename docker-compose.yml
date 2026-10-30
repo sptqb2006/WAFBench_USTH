@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # 1. WAF GATEWAY (Nginx + ModSecurity v3 + OWASP CRS v4.0.0) [Phụ trách: Dương]
+  # ============================================================================
+  waf-gateway:
+    container_name: wb-gateway
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "${GATEWAY_PORT:-8080}:80"
+    environment:
+      - WAF_RULE_ENGINE=${WAF_RULE_ENGINE:-DetectionOnly}
+      - CRS_PARANOIA_LEVEL=${CRS_PARANOIA_LEVEL:-1}
+      - CRS_INBOUND_ANOMALY_THRESHOLD=${CRS_INBOUND_ANOMALY_THRESHOLD:-5}
+      - CRS_OUTBOUND_ANOMALY_THRESHOLD=${CRS_OUTBOUND_ANOMALY_THRESHOLD:-4}
+      - BACKEND_HOST=vulnerable-app
+      - BACKEND_PORT=3000
+    volumes:
+      - waf_audit_logs:/var/log/modsec
+    networks:
+      - frontend-net
+    depends_on:
+      vulnerable-app:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================================================
+  # 2. VULNERABLE TARGET APPLICATION (Node.js 20 / Express) [Phụ trách: Đạt]
+  # ============================================================================
+  vulnerable-app:
+    container_name: wb-app
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    # Port 8001 mở DUY NHẤT trên Loopback 127.0.0.1 cho Test Runner đo Direct Baseline
+    ports:
+      - "127.0.0.1:${DIRECT_APP_PORT:-8001}:3000"
+    environment:
+      - PORT=3000
+      - DB_HOST=app-db
+      - DB_PORT=5432
+      - DB_NAME=${APP_DB_NAME:-vulnerable_db}
+      - DB_USER=${APP_DB_USER:-app_user}
+      - DB_PASSWORD=${APP_DB_PASSWORD:-app_secret_pass}
+      - MOCK_SERVICE_URL=http://mock-internal:8080
+    networks:
+      - frontend-net
+      - backend-net
+    depends_on:
+      app-db:
+        condition: service_healthy
+      mock-internal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # ============================================================================
+  # 3. TARGET DATABASE (PostgreSQL 16) [Phụ trách: Đạt]
+  # ============================================================================
+  app-db:
+    container_name: wb-app-db
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=${APP_DB_NAME:-vulnerable_db}
+      - POSTGRES_USER=${APP_DB_USER:-app_user}
+      - POSTGRES_PASSWORD=${APP_DB_PASSWORD:-app_secret_pass}
+    volumes:
+      - app_db_data:/var/lib/postgresql/data
+      - ./app/src/sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./app/src/sql/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_USER:-app_user} -d ${APP_DB_NAME:-vulnerable_db}"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # ============================================================================
+  # 4. MOCK INTERNAL SERVICE (Private HTTP Target cho SSRF) [Phụ trách: Đạt]
+  # ============================================================================
+  mock-internal:
+    container_name: wb-mock
+    build:
+      context: ./mock-internal
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+    restart: unless-stopped
+
+  # ============================================================================
+  # 5. TELEMETRY WORKER (Log Parser & Correlation Engine) [Phụ trách: Phan]
+  # ============================================================================
+  telemetry-worker:
+    container_name: wb-telemetry
+    build:
+      context: ./telemetry
+      dockerfile: Dockerfile
+    volumes:
+      - waf_audit_logs:/var/log/modsec:ro
+    environment:
+      - LOG_FILE_PATH=/var/log/modsec/audit.log
+      - EVENT_DB_HOST=event-db
+      - EVENT_DB_PORT=5432
+      - EVENT_DB_NAME=${EVENT_DB_NAME:-wafbench_events}
+      - EVENT_DB_USER=${EVENT_DB_USER:-telemetry_user}
+      - EVENT_DB_PASSWORD=${EVENT_DB_PASSWORD:-telemetry_secret_pass}
+    networks:
+      - logging-net
+    depends_on:
+      event-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================================================
+  # 6. TELEMETRY EVENT DATABASE (PostgreSQL 16) [Phụ trách: Phan]
+  # ============================================================================
+  event-db:
+    container_name: wb-event-db
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=${EVENT_DB_NAME:-wafbench_events}
+      - POSTGRES_USER=${EVENT_DB_USER:-telemetry_user}
+      - POSTGRES_PASSWORD=${EVENT_DB_PASSWORD:-telemetry_secret_pass}
+    volumes:
+      - event_db_data:/var/lib/postgresql/data
+      - ./telemetry/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - logging-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${EVENT_DB_USER:-telemetry_user} -d ${EVENT_DB_NAME:-wafbench_events}"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # ============================================================================
+  # 7. DASHBOARD (Streamlit Analytics UI :8501) [Phụ trách: Phan]
+  # ============================================================================
+  dashboard:
+    container_name: wb-dashboard
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "${DASHBOARD_PORT:-8501}:8501"
+    environment:
+      - EVENT_DB_HOST=event-db
+      - EVENT_DB_PORT=5432
+      - EVENT_DB_NAME=${EVENT_DB_NAME:-wafbench_events}
+      - EVENT_DB_USER=${EVENT_DB_USER:-telemetry_user}
+      - EVENT_DB_PASSWORD=${EVENT_DB_PASSWORD:-telemetry_secret_pass}
+    networks:
+      - logging-net
+    depends_on:
+      event-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ==============================================================================
+# MẠNG & VOLUME
+# ==============================================================================
+networks:
+  # Mạng nối WAF Gateway và Vulnerable App (chỉ app và gateway thấy nhau)
+  frontend-net:
+    driver: bridge
+  # Mạng backend cách ly hoàn toàn (App, App-DB, Mock-Service; Gateway KHÔNG thể chạm trực tiếp)
+  backend-net:
+    driver: bridge
+    internal: true
+  # Mạng logging cách ly cho Telemetry Worker, Event-DB và Dashboard
+  logging-net:
+    driver: bridge
+    internal: false
+
+volumes:
+  waf_audit_logs:
+  app_db_data:
+  event_db_data:

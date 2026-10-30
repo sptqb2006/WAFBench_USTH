@@ -1,0 +1,13 @@
+{
+  "case_id": "SSRF-001-B1",
+  "family": "SSRF",
+  "label": "benign",
+  "endpoint": "/fetch",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "{\"url\": \"http://mock-internal:8080/public/avatar.png\"}"
+}

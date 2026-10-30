@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-001-B2",
+  "family": "Reflected XSS",
+  "label": "edge",
+  "endpoint": "/search?q=O'Reilly+Learning+Platform",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

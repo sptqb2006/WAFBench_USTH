@@ -1,0 +1,13 @@
+{
+  "case_id": "SQLI-001-B2",
+  "family": "SQL Injection",
+  "label": "edge",
+  "endpoint": "/login",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "{\"username\": \"o'brien\", \"password\": \"password123\"}"
+}

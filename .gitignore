@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Secret files
+.env
+.env.local
+
+# Docker volumes and logs
+waf_audit_logs/
+*.log
+modsec_audit.log
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Test artifacts & Temporary files
+runner/results/*.csv
+telemetry/temp/
+.pytest_cache/
+
+# Private local project tracking
+PROJECT_TRACKING.md
+

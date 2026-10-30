@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-001",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cscript%3Ealert(1)%3C/script%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

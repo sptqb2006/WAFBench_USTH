@@ -20,8 +20,8 @@ from report import calculate_metrics, export_csv
 
 # Configuration Targets
 DIRECT_URL = os.getenv("DIRECT_APP_URL", "http://127.0.0.1:8001")
-GATEWAY_URL = os.getenv("GATEWAY_URL", "http://127.0.0.1:8080")
-MOCK_URL = os.getenv("MOCK_SERVICE_URL", "http://127.0.0.1:8080") # Internal or port-forwarded
+GATEWAY_URL = os.getenv("GATEWAY_URL", "http://127.0.0.1:8088")
+MOCK_URL = os.getenv("MOCK_SERVICE_URL", "http://127.0.0.1:8082") # Internal or port-forwarded
 
 STATES = ["Direct-to-App", "DetectionOnly", "Blocking"]
 REPETITIONS = 3

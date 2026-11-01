@@ -19,6 +19,7 @@ from oracle.xss_lfi_ssrf_oracle import check_xss_reflection, check_lfi_file_disc
 from oracle.validity_oracle import classify_validity
 from latency import LatencyProfiler
 from report import calculate_metrics, export_csv
+from sync import sync_csv_to_event_db
 
 # Configuration Targets
 DIRECT_URL = os.getenv("DIRECT_APP_URL", "http://127.0.0.1:8001")
@@ -182,6 +183,7 @@ def run_experiment_batch():
     # Export CSV
     output_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", f"{batch_id}.csv")
     export_csv(results, output_csv)
+    sync_csv_to_event_db(output_csv)
     print("\n[OK] Batch run complete!")
 
 if __name__ == "__main__":

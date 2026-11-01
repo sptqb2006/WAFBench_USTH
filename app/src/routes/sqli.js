@@ -1,3 +1,6 @@
+// app/src/routes/sqli.js
+// Javascript / Node.js 20 / Express / CWE-89 SQL Injection
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -7,7 +10,7 @@ router.post('/login', async (req, res) => {
   const { username, password } = req.body || {};
 
   if (!username) {
-    return res.status(400).json({ error: 'Username is required' });
+    return res.status(400).json({ error: 'Username is required', correlation_id: req.correlationId });
   }
 
   try {

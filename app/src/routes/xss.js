@@ -1,6 +1,8 @@
+// app/src/routes/xss.js
+// Javascript / Node.js 20 / Express / CWE-79 Reflected XSS
+
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
 
 router.get('/search', async (req, res) => {
   const query = req.query.q || '';

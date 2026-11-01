@@ -1,3 +1,6 @@
+// app/src/db.js
+// Javascript / Node.js 20 / pg / PostgreSQL 16 Connection Pool
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -9,6 +12,11 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 5000,
   connectionTimeoutMillis: 3000,
+});
+
+// Ngăn process crash nếu idle client bị ngắt kết nối đột ngột
+pool.on('error', (err) => {
+  console.error('[DB_POOL_ERROR]', err.message);
 });
 
 module.exports = {

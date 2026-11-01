@@ -1,9 +1,23 @@
+// app/src/routes/health.js
+// Javascript / Node.js 20 / Express / WAFBench Target
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+
+// Pre-cache Fixture F1 seed SQL in memory to ensure fast reset (<= 5s)
+const seedPath = path.join(__dirname, '../sql/seed.sql');
+let cachedSeedSql = null;
+
+function getSeedSql() {
+  if (!cachedSeedSql) {
+    cachedSeedSql = fs.readFileSync(seedPath, 'utf8');
+  }
+  return cachedSeedSql;
+}
 
 router.get('/health', async (req, res) => {
   try {
@@ -27,8 +41,7 @@ router.get('/health', async (req, res) => {
 router.post('/health/reset', async (req, res) => {
   const start = Date.now();
   try {
-    const seedPath = path.join(__dirname, '../sql/seed.sql');
-    const seedSql = fs.readFileSync(seedPath, 'utf8');
+    const seedSql = getSeedSql();
 
     // Nạp lại Fixture F1 trong PostgreSQL
     await db.query(seedSql);

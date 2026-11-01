@@ -1,3 +1,6 @@
+// app/src/routes/fetch.js
+// Javascript / Node.js 20 / Express / CWE-918 Server-Side Request Forgery
+
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
@@ -6,7 +9,7 @@ router.post('/fetch', async (req, res) => {
   const { url } = req.body || {};
 
   if (!url) {
-    return res.status(400).json({ error: 'URL parameter is required in JSON body' });
+    return res.status(400).json({ error: 'URL parameter is required in JSON body', correlation_id: req.correlationId });
   }
 
   try {

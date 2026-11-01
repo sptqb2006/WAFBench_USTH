@@ -1,7 +1,11 @@
+// app/src/server.js
+// Javascript / Node.js 20 / Express / WAFBench Target Server
+
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const db = require('./db');
 
 const healthRoutes = require('./routes/health');
 const sqliRoutes = require('./routes/sqli');
@@ -53,7 +57,7 @@ app.use('/', xssRoutes);
 app.use('/', traversalRoutes);
 app.use('/', fetchRoutes);
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     event: 'APP_STARTUP',
@@ -61,3 +65,23 @@ app.listen(PORT, '0.0.0.0', () => {
     status: 'READY'
   }));
 });
+
+// Graceful Shutdown Handler
+function gracefulShutdown(signal) {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event: 'APP_SHUTDOWN',
+    signal: signal
+  }));
+  server.close(async () => {
+    try {
+      await db.pool.end();
+    } catch (err) {
+      // Ignore cleanup error
+    }
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

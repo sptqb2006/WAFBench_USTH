@@ -10,7 +10,7 @@ services:
       context: ./gateway
       dockerfile: Dockerfile
     ports:
-      - "${GATEWAY_PORT:-8080}:80"
+      - "${GATEWAY_PORT:-8088}:80"
     environment:
       - WAF_RULE_ENGINE=${WAF_RULE_ENGINE:-DetectionOnly}
       - CRS_PARANOIA_LEVEL=${CRS_PARANOIA_LEVEL:-1}
@@ -25,6 +25,12 @@ services:
     depends_on:
       vulnerable-app:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
 
   # ============================================================================
@@ -68,6 +74,8 @@ services:
   app-db:
     container_name: wb-app-db
     image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       - POSTGRES_DB=${APP_DB_NAME:-vulnerable_db}
       - POSTGRES_USER=${APP_DB_USER:-app_user}
@@ -94,6 +102,8 @@ services:
     build:
       context: ./mock-internal
       dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8082:8080"
     networks:
       - backend-net
     healthcheck:
@@ -121,6 +131,7 @@ services:
       - EVENT_DB_NAME=${EVENT_DB_NAME:-wafbench_events}
       - EVENT_DB_USER=${EVENT_DB_USER:-telemetry_user}
       - EVENT_DB_PASSWORD=${EVENT_DB_PASSWORD:-telemetry_secret_pass}
+      - PYTHONUNBUFFERED=1
     networks:
       - logging-net
     depends_on:
@@ -172,6 +183,12 @@ services:
     depends_on:
       event-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')\" || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
 
 # ==============================================================================
@@ -184,7 +201,7 @@ networks:
   # Mạng backend cách ly hoàn toàn (App, App-DB, Mock-Service; Gateway KHÔNG thể chạm trực tiếp)
   backend-net:
     driver: bridge
-    internal: true
+    internal: false
   # Mạng logging cách ly cho Telemetry Worker, Event-DB và Dashboard
   logging-net:
     driver: bridge

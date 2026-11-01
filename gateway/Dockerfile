@@ -14,8 +14,9 @@ RUN echo "Include /etc/modsecurity.d/main.conf" >> /etc/nginx/templates/modsecur
     echo "Include /etc/modsecurity.d/rules/custom.conf" >> /etc/nginx/templates/modsecurity.d/modsecurity-override.conf.template && \
     echo "Include /etc/modsecurity.d/rules/exclusions.conf" >> /etc/nginx/templates/modsecurity.d/modsecurity-override.conf.template
 
-# Ensure audit log directory exists with correct permissions
-RUN mkdir -p /var/log/modsec && chown -R nginx:nginx /var/log/modsec && chmod 777 /var/log/modsec
+# Ensure audit log directory exists with correct permissions and main.conf is editable
+RUN mkdir -p /var/log/modsec && chown -R nginx:nginx /var/log/modsec && chmod 777 /var/log/modsec && \
+    chmod 666 /etc/modsecurity.d/main.conf
 
 USER nginx
 

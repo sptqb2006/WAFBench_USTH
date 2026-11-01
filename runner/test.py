@@ -11,6 +11,7 @@ import time
 import uuid
 import requests
 import urllib.parse
+import subprocess
 
 from manager import RequestManager
 from oracle.sqli_oracle import check_sqli_backend_effect
@@ -55,6 +56,26 @@ def trigger_reset(direct_url: str, profiler: LatencyProfiler) -> bool:
     except Exception:
         return False
 
+def switch_waf_mode(mode: str) -> bool:
+    """
+    Switches ModSecurity mode inside wb-gateway (DetectionOnly or On) and reloads Nginx.
+    """
+    try:
+        rule_engine = "On" if mode == "Blocking" else "DetectionOnly"
+        subprocess.run(
+            ["docker", "exec", "wb-gateway", "sed", "-i", f"s/SecRuleEngine .*/SecRuleEngine {rule_engine}/", "/etc/modsecurity.d/main.conf"],
+            check=True, timeout=5, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        subprocess.run(
+            ["docker", "exec", "wb-gateway", "nginx", "-s", "reload"],
+            check=True, timeout=5, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        time.sleep(1.0)
+        return True
+    except Exception as e:
+        print(f"  [-] Note: WAF mode toggle ({mode}): {e}")
+        return False
+
 def run_experiment_batch():
     cases = load_all_cases()
     if not cases:
@@ -80,6 +101,9 @@ def run_experiment_batch():
         return
 
     for state in STATES:
+        if state in ["DetectionOnly", "Blocking"]:
+            switch_waf_mode(state)
+
         target_url = DIRECT_URL if state == "Direct-to-App" else GATEWAY_URL
         print(f"\n>>> [STATE: {state.upper()}] (Target: {target_url}) <<<")
 

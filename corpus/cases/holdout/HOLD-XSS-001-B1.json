@@ -1,0 +1,12 @@
+{
+  "case_id": "HOLD-XSS-001-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=modern+html5+responsive+design",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

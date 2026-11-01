@@ -31,3 +31,10 @@ telemetry/temp/
 # Private local project tracking
 PROJECT_TRACKING.md
 
+# AI Agent configuration, skills & memory (Local only - do not commit)
+.agents
+.agents/
+AGENTS.md
+GEMINI.md
+
+

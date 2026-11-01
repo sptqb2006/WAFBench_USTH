@@ -9,6 +9,6 @@ INSERT INTO users (username, password, role) VALUES
 
 -- Insert 3 sample articles
 INSERT INTO articles (title, content) VALUES
-('Báo cáo An toàn Thông tin 2023', 'Nội dung phân tích tổng quan các lỗ hổng OWASP Top 10.'),
-('Hướng dẫn Cấu hình ModSecurity', 'Các bước thiết lập CRS v4.0.0 trên nền tảng Nginx.'),
-('Kiến trúc Telemetry Đa tầng', 'Mô hình chuẩn hóa log ECS-lite cho hệ thống đo kiểm WAF.');
+('Information Security Annual Report 2023', 'Comprehensive analytical overview of OWASP Top 10 vulnerabilities.'),
+('ModSecurity Configuration Guide', 'Step-by-step instructions for deploying CRS v4.0.0 on Nginx.'),
+('Multi-Tier Telemetry Architecture', 'ECS-lite log normalization design for empirical WAF benchmarking.');

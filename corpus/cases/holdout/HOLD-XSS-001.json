@@ -1,0 +1,12 @@
+{
+  "case_id": "HOLD-XSS-001",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Ciframe%20src=%22javascript:alert(1)%22%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

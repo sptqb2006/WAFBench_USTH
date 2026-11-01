@@ -5,7 +5,7 @@ const db = require('../db');
 router.get('/search', async (req, res) => {
   const query = req.query.q || '';
 
-  // VULNERABLE: Phản hồi trực tiếp chuỗi q vào DOM HTML mà không encode (CWE-79)
+  // VULNERABLE: Direct unescaped reflection of query parameter 'q' into HTML DOM (CWE-79)
   const htmlResponse = `
     <!DOCTYPE html>
     <html lang="en">
@@ -14,8 +14,8 @@ router.get('/search', async (req, res) => {
       <title>Search Results</title>
     </head>
     <body>
-      <h1>Kết quả tìm kiếm cho: ${query}</h1>
-      <p>Không tìm thấy bài viết nào phù hợp.</p>
+      <h1>Search Results for: ${query}</h1>
+      <p>No matching articles found.</p>
     </body>
     </html>
   `;

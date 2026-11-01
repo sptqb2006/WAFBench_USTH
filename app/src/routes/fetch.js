@@ -10,7 +10,7 @@ router.post('/fetch', async (req, res) => {
   }
 
   try {
-    // VULNERABLE: Thực hiện HTTP GET tới URL người dùng cung cấp (SSRF - CWE-918)
+    // VULNERABLE: Direct HTTP GET dispatch to user-supplied URL (SSRF - CWE-918)
     const response = await axios.get(url, {
       timeout: 3000,
       headers: {

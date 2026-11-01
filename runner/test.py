@@ -10,6 +10,7 @@ import json
 import time
 import uuid
 import requests
+import urllib.parse
 
 from manager import RequestManager
 from oracle.sqli_oracle import check_sqli_backend_effect
@@ -114,7 +115,9 @@ def run_experiment_batch():
                     backend_effect = db_res.get("backend_effect", False)
                     observation = db_res.get("observation")
                 elif family == "Reflected XSS":
-                    xss_res = check_xss_reflection(client_res, "<script>alert(1)</script>")
+                    parsed_qs = urllib.parse.parse_qs(urllib.parse.urlparse(case.get("endpoint", "")).query)
+                    xss_probe = parsed_qs.get("q", [""])[0]
+                    xss_res = check_xss_reflection(client_res, xss_probe)
                     backend_effect = xss_res.get("backend_effect", False)
                     observation = xss_res.get("observation")
                 elif family == "Path Traversal":

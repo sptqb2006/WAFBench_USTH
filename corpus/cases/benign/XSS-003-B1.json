@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-003-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=scalable+vector+graphics+guide",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

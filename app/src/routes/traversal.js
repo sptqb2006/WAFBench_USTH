@@ -10,7 +10,7 @@ router.get('/file', (req, res) => {
     return res.status(400).json({ error: 'Filename parameter is required' });
   }
 
-  // VULNERABLE: path.join không kiểm tra '../' dẫn tới Path Traversal (CWE-22)
+  // VULNERABLE: Unsanitized path.join allows Path Traversal via '../' (CWE-22)
   const baseDirectory = path.join(__dirname, '../public/downloads');
   const filePath = path.join(baseDirectory, filename);
 
@@ -23,7 +23,7 @@ router.get('/file', (req, res) => {
       });
     }
 
-    // Nếu là file văn bản hoặc /etc/passwd thì trả về plain text
+    // Return plain text if text file or /etc/passwd disclosure
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     return res.status(200).send(data);
   });

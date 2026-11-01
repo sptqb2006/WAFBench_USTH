@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Normalized WAFBench Event Schema (PostgreSQL 16) - Bảng 4.3 & 4.6
+-- Normalized WAFBench Event Schema (PostgreSQL 16) - Tables 4.3 & 4.6
 -- ==============================================================================
 
 DROP TABLE IF EXISTS evaluation_metrics;
@@ -48,7 +48,7 @@ CREATE TABLE normalized_events (
     metric_cell VARCHAR(32)                  -- TP_D, FN_D, TP_B, FN_B, FP_D, TN_D, FP_B, TN_B
 );
 
--- Bảng lưu trữ chỉ số tổng hợp theo từng batch chạy
+-- Aggregated metrics table per benchmark execution batch
 CREATE TABLE evaluation_metrics (
     id SERIAL PRIMARY KEY,
     batch_id VARCHAR(64) NOT NULL,
@@ -64,10 +64,10 @@ CREATE TABLE evaluation_metrics (
     blocking_rate NUMERIC(5,2),              -- BR = TP_B / (TP_B + FN_B)
     detection_fpr NUMERIC(5,2),              -- Detection FPR = FP_D / (FP_D + TN_D)
     blocking_fpr NUMERIC(5,2),               -- Blocking FPR = FP_B / (FP_B + TN_B)
-    regression_pass_rate NUMERIC(5,2)        -- RPR (nếu có C1)
+    regression_pass_rate NUMERIC(5,2)        -- RPR (evaluated post C1 tuning)
 );
 
--- Đánh Index tối ưu hóa truy vấn
+-- Query optimization indices
 CREATE INDEX idx_events_correlation_id ON normalized_events(correlation_id);
 CREATE INDEX idx_events_run_id ON normalized_events(run_id);
 CREATE INDEX idx_events_case_id ON normalized_events(case_id);

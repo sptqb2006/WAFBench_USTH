@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Cài đặt curl / wget để hỗ trợ healthcheck
+# Install curl / wget for container healthchecks
 RUN apk add --no-cache wget curl
 
 COPY package.json ./

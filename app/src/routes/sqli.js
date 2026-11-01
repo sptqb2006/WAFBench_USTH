@@ -11,8 +11,8 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // VULNERABLE: Nối chuỗi trực tiếp tạo lỗ hổng SQL Injection (CWE-89)
-    // Cho phép comment-truncation: admin'-- 
+    // VULNERABLE: Direct string concatenation creates SQL Injection vulnerability (CWE-89)
+    // Allows comment-truncation: admin'-- 
     const unsafeQuery = `SELECT id, username, role FROM users WHERE username = '${username}' AND password = '${password || ''}'`;
     
     const result = await db.query(unsafeQuery);
@@ -21,7 +21,7 @@ router.post('/login', async (req, res) => {
       const user = result.rows[0];
       const sessionToken = uuidv4();
 
-      // Lưu session vào bảng sessions phục vụ xác nhận Oracle
+      // Persist active session in sessions table for Backend Oracle verification
       await db.query(
         'INSERT INTO sessions (session_token, username) VALUES ($1, $2)',
         [sessionToken, user.username]

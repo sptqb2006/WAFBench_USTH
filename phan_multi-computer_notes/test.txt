@@ -1,3 +1,0 @@
-cái txt file này là test vì quên các loại lệnh git và tiện test luôn push và pull file từ máy này sang máy kia như nào
-
-tôi bị ngu

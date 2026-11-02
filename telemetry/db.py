@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 WAFBench Telemetry Database Connector & Schema Manager (PostgreSQL 16)
-
+Author: Phan Duc Anh
 """
 
 import os
@@ -424,3 +424,5 @@ if __name__ == "__main__":
 
     print("\n[Tip] View schema specifications anytime with: py telemetry/db.py --schema")
     print("=" * 78)
+rsor
+    )

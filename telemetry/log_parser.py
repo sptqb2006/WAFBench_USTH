@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""
-ModSecurity v3 Serial JSON Audit Log Parser -> ECS-lite Normalization
+"""ModSecurity v3 Serial JSON Audit Log Parser -> ECS-lite Normalization
 Conforming to WAFBench Table 4.3 (Normalized Events) & Table 3 (Audit Log Mapping)
+Author: Phan Duc Anh
 """
 
 import sys
@@ -250,6 +250,12 @@ def run_tests():
     print("           WAFBench ModSecurity Log Parser Verification Suite")
     print("=" * 78)
 
+    #
+    #
+    # VERY IMPORTANT NOTE: the values and variables below only serves as test information so that the program can be checked and see if it works fully or not
+    #
+    #
+
     # Test 1: SQL Injection (Blocked)
     print("\n[Test 1] Parsing SQL Injection Audit Record (Blocking Mode)...")
     raw_sqli = get_sample_audit_log_sqli()
@@ -302,3 +308,15 @@ if __name__ == "__main__":
         # Direct string parse from CLI argument
         res = parse_audit_record(sys.argv[1])
         print(json.dumps(res, indent=2))
+ri": req.get("uri"),
+        "audit_raw": json_str
+    }
+i": req.get("uri"),
+        "audit_raw": json_str
+    }
+i": req.get("uri"),
+        "audit_raw": json_str
+    }
+ri": req.get("uri"),
+        "audit_raw": json_str
+    }

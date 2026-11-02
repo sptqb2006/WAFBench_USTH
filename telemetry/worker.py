@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""
-WAFBench Telemetry Worker Daemon
+"""WAFBench Telemetry Worker Daemon
 Monitors ModSecurity audit log, parses JSON via log_parser, and updates event-db.
 Conforming to Table 4.3 and the WAF Telemetry Ingestion Contract.
+Author: Phan Duc Anh
 """
 
 import sys
@@ -190,3 +190,11 @@ if __name__ == "__main__":
 
     # Default production daemon mode
     tail_audit_log(LOG_FILE, continuous=True)
+: {e}")
+
+if __name__ == "__main__":
+    tail_audit_log()
+: {e}")
+
+if __name__ == "__main__":
+    tail_audit_log()

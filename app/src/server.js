@@ -43,7 +43,7 @@ app.use((req, res, next) => {
       duration_ms: duration,
       ip: req.ip || req.connection.remoteAddress,
     };
-    // Xuất log trên đúng 1 dòng JSON ra stdout theo yêu cầu
+    // Emit single-line JSON log to stdout as required by telemetry contract
     console.log(JSON.stringify(logEntry));
   });
 
@@ -56,6 +56,19 @@ app.use('/', sqliRoutes);
 app.use('/', xssRoutes);
 app.use('/', traversalRoutes);
 app.use('/', fetchRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+  const statusCode = err.status || err.statusCode || 500;
+  return res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    correlation_id: req.correlationId || 'untracked'
+  });
+});
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(JSON.stringify({

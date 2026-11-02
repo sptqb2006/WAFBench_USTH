@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { v4: uuidv4 } = require('uuid');
+const { generateSessionToken } = require('../utils/hmac');
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body || {};
@@ -14,17 +14,18 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // VULNERABLE: Nối chuỗi trực tiếp tạo lỗ hổng SQL Injection (CWE-89)
-    // Cho phép comment-truncation: admin'-- 
+    // VULNERABLE: Direct string interpolation introducing SQL Injection (CWE-89)
+    // Allows comment-truncation payload bypass (e.g. admin'--)
     const unsafeQuery = `SELECT id, username, role FROM users WHERE username = '${username}' AND password = '${password || ''}'`;
     
     const result = await db.query(unsafeQuery);
 
     if (result.rows.length > 0) {
       const user = result.rows[0];
-      const sessionToken = uuidv4();
+      // Cryptographically signed session token using HMAC-SHA256 for local role-based authorization
+      const sessionToken = generateSessionToken(user.username, user.role);
 
-      // Lưu session vào bảng sessions phục vụ xác nhận Oracle
+      // Persist session to database for test runner oracle verification
       await db.query(
         'INSERT INTO sessions (session_token, username) VALUES ($1, $2)',
         [sessionToken, user.username]
@@ -37,6 +38,7 @@ router.post('/login', async (req, res) => {
         message: 'Authentication successful',
         user: { username: user.username, role: user.role },
         session_token: sessionToken,
+        hmac_token: sessionToken,
         correlation_id: req.correlationId
       });
     } else {

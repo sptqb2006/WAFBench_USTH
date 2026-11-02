@@ -7,14 +7,16 @@ const path = require('path');
 const fs = require('fs');
 
 router.get('/file', (req, res) => {
-  const filename = req.query.filename;
+  const rawFilename = req.query.filename;
 
-  if (!filename) {
-    return res.status(400).json({ error: 'Filename parameter is required' });
+  if (!rawFilename) {
+    return res.status(400).json({ error: 'Filename parameter is required', correlation_id: req.correlationId });
   }
 
-  // VULNERABLE: path.join không kiểm tra '../' dẫn tới Path Traversal (CWE-22)
-  // __dirname là /app/src/routes, nên ../../public/downloads trỏ về /app/public/downloads
+  const filename = Array.isArray(rawFilename) ? rawFilename[0] : String(rawFilename);
+
+  // VULNERABLE: path.join without sanitization allows directory traversal (CWE-22)
+  // __dirname is /app/src/routes, so ../../public/downloads resolves to /app/public/downloads
   const baseDirectory = path.join(__dirname, '../../public/downloads');
   const filePath = path.join(baseDirectory, filename);
 
@@ -27,7 +29,7 @@ router.get('/file', (req, res) => {
       });
     }
 
-    // Xác định Content-Type phù hợp theo đuôi file hoặc mặc định text/plain
+    // Determine appropriate Content-Type header or fallback to text/plain
     if (filename.toLowerCase().endsWith('.pdf')) {
       res.setHeader('Content-Type', 'application/pdf');
     } else {

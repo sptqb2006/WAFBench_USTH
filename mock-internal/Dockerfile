@@ -4,6 +4,8 @@
 FROM node:20-alpine
 
 WORKDIR /app
+
+# Install wget utility for container healthcheck probe
 RUN apk add --no-cache wget
 
 COPY package.json ./

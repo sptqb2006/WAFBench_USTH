@@ -5,7 +5,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Cai dat curl / wget de ho tro healthcheck
+# Install curl and wget to support docker healthchecks
 RUN apk add --no-cache wget curl
 
 COPY package.json ./

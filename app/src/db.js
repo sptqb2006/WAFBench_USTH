@@ -14,7 +14,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 3000,
 });
 
-// Ngăn process crash nếu idle client bị ngắt kết nối đột ngột
+// Prevent process exit if an idle database client encounters an unexpected connection error
 pool.on('error', (err) => {
   console.error('[DB_POOL_ERROR]', err.message);
 });

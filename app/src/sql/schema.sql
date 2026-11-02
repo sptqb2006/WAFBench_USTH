@@ -1,4 +1,4 @@
--- Schema cho Vulnerable Application Database
+-- Schema definition for Vulnerable Application Database
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS articles;
 DROP TABLE IF EXISTS users;

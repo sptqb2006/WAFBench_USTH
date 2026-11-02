@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/search', async (req, res) => {
   const query = req.query.q || '';
 
-  // VULNERABLE: Phản hồi trực tiếp chuỗi q vào DOM HTML mà không encode (CWE-79)
+  // VULNERABLE: Direct reflection of parameter q into HTML DOM without escaping (CWE-79)
   const htmlResponse = `
     <!DOCTYPE html>
     <html lang="en">

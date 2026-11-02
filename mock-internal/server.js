@@ -1,5 +1,6 @@
 // mock-internal/server.js
-// Javascript / Node.js 20 / Express / SSRF Private Mock Target
+// Javascript / Node.js 20 / Express / Private SSRF Mock Target & Oracle Logger
+// Part of WAFBench Controlled Backend Stack (Author: Dat)
 
 const express = require('express');
 const app = express();

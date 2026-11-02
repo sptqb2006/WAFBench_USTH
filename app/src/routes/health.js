@@ -43,10 +43,10 @@ router.post('/health/reset', async (req, res) => {
   try {
     const seedSql = getSeedSql();
 
-    // Nạp lại Fixture F1 trong PostgreSQL
+    // Reset and seed Fixture F1 state in PostgreSQL
     await db.query(seedSql);
 
-    // Kích hoạt xóa log trên mock-internal service
+    // Trigger log reset on mock-internal service
     const mockUrl = process.env.MOCK_SERVICE_URL || 'http://mock-internal:8080';
     try {
       await axios.post(`${mockUrl}/reset`, {}, { timeout: 2000 });

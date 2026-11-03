@@ -1,7 +1,11 @@
+// app/src/server.js
+// Javascript / Node.js 20 / Express / WAFBench Target Server
+
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const db = require('./db');
 
 const healthRoutes = require('./routes/health');
 const sqliRoutes = require('./routes/sqli');
@@ -12,15 +16,7 @@ const fetchRoutes = require('./routes/fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Body Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Static files (legitimate download path)
-app.use('/public', express.static(path.join(__dirname, '../public')));
-
-// Correlation ID & Single-Line JSON Logger Middleware
+// Correlation ID & Single-Line JSON Logger Middleware (Registered first)
 app.use((req, res, next) => {
   const correlationId = req.headers['x-request-id'] || uuidv4();
   req.correlationId = correlationId;
@@ -46,6 +42,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Body Parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Static files (legitimate download path)
+app.use('/public', express.static(path.join(__dirname, '../public')));
+
 // Mount Routes
 app.use('/', healthRoutes);
 app.use('/', sqliRoutes);
@@ -53,7 +57,20 @@ app.use('/', xssRoutes);
 app.use('/', traversalRoutes);
 app.use('/', fetchRoutes);
 
-app.listen(PORT, '0.0.0.0', () => {
+// Global Error Handler
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+  const statusCode = err.status || err.statusCode || 500;
+  return res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    correlation_id: req.correlationId || 'untracked'
+  });
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     event: 'APP_STARTUP',
@@ -61,3 +78,23 @@ app.listen(PORT, '0.0.0.0', () => {
     status: 'READY'
   }));
 });
+
+// Graceful Shutdown Handler
+function gracefulShutdown(signal) {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event: 'APP_SHUTDOWN',
+    signal: signal
+  }));
+  server.close(async () => {
+    try {
+      await db.pool.end();
+    } catch (err) {
+      // Ignore cleanup error
+    }
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

@@ -1,3 +1,7 @@
+// mock-internal/server.js
+// Javascript / Node.js 20 / Express / Private SSRF Mock Target & Oracle Logger
+// Part of WAFBench Controlled Backend Stack (Author: Dat)
+
 const express = require('express');
 const app = express();
 const PORT = 8080;
@@ -59,6 +63,30 @@ app.get('/public/avatar.png', (req, res) => {
   res.send(png1x1);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+// Legitimate target endpoint for SSRF-002-B1 (Benign logo.png)
+app.get('/public/logo.png', (req, res) => {
+  res.setHeader('Content-Type', 'image/png');
+  const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+  res.send(png1x1);
+});
+
+// Legitimate target endpoint for HOLD-SSRF-001-B1 (Benign favicon.ico)
+app.get('/public/favicon.ico', (req, res) => {
+  res.setHeader('Content-Type', 'image/x-icon');
+  const dummyIco = Buffer.from('AAABAAEAAQEAAAEAIAAwAAAAFgAAACgAAAABAAAAAgAAAAEAIAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'base64');
+  res.send(dummyIco);
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`[mock-internal] Service running on internal port ${PORT}`);
 });
+
+// Graceful Shutdown
+function gracefulShutdown(signal) {
+  server.close(() => {
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

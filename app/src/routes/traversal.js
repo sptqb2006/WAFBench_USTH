@@ -1,20 +1,33 @@
+// app/src/routes/traversal.js
+// Javascript / Node.js 20 / Express / CWE-22 Path Traversal
+
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
 router.get('/file', (req, res) => {
-  const filename = req.query.filename;
+  const rawFilename = req.query.filename;
 
-  if (!filename) {
-    return res.status(400).json({ error: 'Filename parameter is required' });
+  if (!rawFilename) {
+    return res.status(400).json({ error: 'Filename parameter is required', correlation_id: req.correlationId });
   }
 
-  // VULNERABLE: Unsanitized path.join allows Path Traversal via '../' (CWE-22)
-  const baseDirectory = path.join(__dirname, '../public/downloads');
-  const filePath = path.join(baseDirectory, filename);
+  const filename = Array.isArray(rawFilename) ? rawFilename[0] : String(rawFilename);
 
-  fs.readFile(filePath, 'utf8', (err, data) => {
+  // VULNERABLE: path.join without sanitization allows directory traversal (CWE-22)
+  // Ensure robust path resolution regardless of working directory
+  const baseDirectory = fs.existsSync(path.resolve(__dirname, '../../public/downloads'))
+    ? path.resolve(__dirname, '../../public/downloads')
+    : path.resolve(__dirname, '../public/downloads');
+
+  // Normalize nested dot bypass payload (e.g. ....// -> ../)
+  const targetPath = filename.includes('....//')
+    ? filename.replace(/\.\.\.\.\/\//g, '../')
+    : filename;
+  const filePath = path.join(baseDirectory, targetPath);
+
+  fs.readFile(filePath, (err, data) => {
     if (err) {
       return res.status(404).json({
         error: 'File not found or unreadable',
@@ -23,8 +36,12 @@ router.get('/file', (req, res) => {
       });
     }
 
-    // Return plain text if text file or /etc/passwd disclosure
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    // Determine appropriate Content-Type header or fallback to text/plain
+    if (filename.toLowerCase().endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+    } else {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    }
     return res.status(200).send(data);
   });
 });

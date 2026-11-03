@@ -47,7 +47,23 @@ def sync_csv_to_event_db(csv_file: str) -> bool:
     INSERT INTO normalized_events (
         run_id, batch_id, case_id, family_id, label, state, repetition, correlation_id,
         client_status, request_sha256, backend_effect, oracle_observation, validity, invalid_reason, verdict, metric_cell
-    ) VALUES {','.join(values)};
+    ) VALUES {','.join(values)}
+    ON CONFLICT (correlation_id) DO UPDATE SET
+        run_id = EXCLUDED.run_id,
+        batch_id = EXCLUDED.batch_id,
+        case_id = EXCLUDED.case_id,
+        family_id = EXCLUDED.family_id,
+        label = EXCLUDED.label,
+        state = EXCLUDED.state,
+        repetition = EXCLUDED.repetition,
+        client_status = EXCLUDED.client_status,
+        request_sha256 = EXCLUDED.request_sha256,
+        backend_effect = EXCLUDED.backend_effect,
+        oracle_observation = EXCLUDED.oracle_observation,
+        validity = EXCLUDED.validity,
+        invalid_reason = EXCLUDED.invalid_reason,
+        verdict = EXCLUDED.verdict,
+        metric_cell = EXCLUDED.metric_cell;
     """
 
     try:

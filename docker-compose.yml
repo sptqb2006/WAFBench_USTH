@@ -16,10 +16,13 @@ services:
       - CRS_OUTBOUND_ANOMALY_THRESHOLD=${CRS_OUTBOUND_ANOMALY_THRESHOLD:-4}
       - BACKEND_HOST=vulnerable-app
       - BACKEND_PORT=3000
+      - DASHBOARD_HOST=dashboard
+      - DASHBOARD_PORT=8501
     volumes:
       - waf_audit_logs:/var/log/modsec
     networks:
       - frontend-net
+      - logging-net
     depends_on:
       vulnerable-app:
         condition: service_healthy

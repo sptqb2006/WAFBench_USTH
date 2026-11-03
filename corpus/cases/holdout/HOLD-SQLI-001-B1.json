@@ -9,5 +9,6 @@
     "X-Request-ID": "{correlation_id}",
     "Host": "{host}"
   },
-  "body": "{\"username\": \"david_miller\", \"password\": \"valid_user_pass\"}"
+  "body": "{\"username\": \"david_miller\", \"password\": \"valid_user_pass\"}",
+  "expected_status": [200, 401]
 }

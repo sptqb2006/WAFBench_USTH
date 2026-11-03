@@ -308,15 +308,3 @@ if __name__ == "__main__":
         # Direct string parse from CLI argument
         res = parse_audit_record(sys.argv[1])
         print(json.dumps(res, indent=2))
-ri": req.get("uri"),
-        "audit_raw": json_str
-    }
-i": req.get("uri"),
-        "audit_raw": json_str
-    }
-i": req.get("uri"),
-        "audit_raw": json_str
-    }
-ri": req.get("uri"),
-        "audit_raw": json_str
-    }

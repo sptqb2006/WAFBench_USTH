@@ -190,11 +190,3 @@ if __name__ == "__main__":
 
     # Default production daemon mode
     tail_audit_log(LOG_FILE, continuous=True)
-: {e}")
-
-if __name__ == "__main__":
-    tail_audit_log()
-: {e}")
-
-if __name__ == "__main__":
-    tail_audit_log()

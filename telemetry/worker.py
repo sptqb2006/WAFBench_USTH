@@ -2,7 +2,6 @@
 """WAFBench Telemetry Worker Daemon
 Monitors ModSecurity audit log, parses JSON via log_parser, and updates event-db.
 Conforming to Table 4.3 and the WAF Telemetry Ingestion Contract.
-Author: Phan Duc Anh
 """
 
 import sys

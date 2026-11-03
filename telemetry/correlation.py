@@ -3,7 +3,6 @@
 WAFBench Cross-Tier Correlation Engine (Client + WAF Audit + Backend Oracle)
 Conforming to Table 4.3 (Normalized Events), Table 4.6 (Evaluation Metrics), 
 and Table 5.2 (Metric Classification Matrix).
-Author: Phan Duc Anh
 """
 
 import sys

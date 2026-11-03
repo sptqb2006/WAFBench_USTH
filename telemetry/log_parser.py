@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """ModSecurity v3 Serial JSON Audit Log Parser -> ECS-lite Normalization
 Conforming to WAFBench Table 4.3 (Normalized Events) & Table 3 (Audit Log Mapping)
-Author: Phan Duc Anh
 """
 
 import sys

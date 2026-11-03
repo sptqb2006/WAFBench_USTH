@@ -1,7 +1,6 @@
 -- ==============================================================================
 -- WAFBench Normalized Event Store Schema (PostgreSQL 16)
 -- Conforming to Table 4.3 (Normalized Events) & Table 4.6 (Evaluation Metrics)
--- Author: Phan Duc Anh
 -- ==============================================================================
 
 DROP TABLE IF EXISTS evaluation_metrics CASCADE;

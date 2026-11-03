@@ -1,4 +1,4 @@
-FROM owasp/modsecurity-crs:4.0.0-nginx-alpine-202404070701
+FROM owasp/modsecurity-crs:4-nginx-alpine
 
 # Copy custom configurations
 COPY nginx.conf /etc/nginx/templates/conf.d/default.conf.template

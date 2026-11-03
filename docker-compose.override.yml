@@ -1,0 +1,4 @@
+services:
+  dashboard:
+    volumes:
+      - ./dashboard:/app

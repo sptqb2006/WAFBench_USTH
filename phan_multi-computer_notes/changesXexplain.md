@@ -1,19 +1,27 @@
 # WAFBench: Changes & Explanations
 
-> **Module:** Telemetry Pipeline & Database  
-> **Date:** November 2, 2026  
+> **Module:** Telemetry Pipeline, Database & Evaluation Dashboard  
+> **Date:** November 3, 2026  
 
 ---
 
 ## 1. Overview
-Implemented and verified the core telemetry ingestion pipeline, database layer, and cross-tier correlation engine (`schema.sql`, `db.py`, `log_parser.py`, `worker.py`, `correlation.py`) as specified in `notes/working_files.txt`.
+Implemented and verified the core telemetry ingestion pipeline, database layer, cross-tier correlation engine, and forensic evaluation dashboard (`schema.sql`, `db.py`, `log_parser.py`, `worker.py`, `correlation.py`, `dashboard/app.py`, `dashboard/styles.py`, `dashboard/pages/*`) as specified in `notes/working_files.txt`.
 
-### Modified Files
-* [`telemetry/schema.sql`](file:///D:/Documents/learning%20resources/usth%20B3/grp_prj/WAFBench_USTH/telemetry/schema.sql)
-* [`telemetry/db.py`](file:///D:/Documents/learning%20resources/usth%20B3/grp_prj/WAFBench_USTH/telemetry/db.py)
-* [`telemetry/log_parser.py`](file:///D:/Documents/learning%20resources/usth%20B3/grp_prj/WAFBench_USTH/telemetry/log_parser.py)
-* [`telemetry/worker.py`](file:///D:/Documents/learning%20resources/usth%20B3/grp_prj/WAFBench_USTH/telemetry/worker.py)
-* [`telemetry/correlation.py`](file:///D:/Documents/learning%20resources/usth%20B3/grp_prj/WAFBench_USTH/telemetry/correlation.py)
+### Modified & Added Files
+* [`telemetry/schema.sql`](file: WAFBench_USTH/telemetry/schema.sql)
+* [`telemetry/db.py`](file: WAFBench_USTH/telemetry/db.py)
+* [`telemetry/log_parser.py`](file: WAFBench_USTH/telemetry/log_parser.py)
+* [`telemetry/worker.py`](file: WAFBench_USTH/telemetry/worker.py)
+* [`telemetry/correlation.py`](file: WAFBench_USTH/telemetry/correlation.py)
+* [`dashboard/app.py`](file: WAFBench_USTH/dashboard/app.py)
+* [`dashboard/styles.py`](file: WAFBench_USTH/dashboard/styles.py)
+* [`dashboard/sample_events.json`](file: WAFBench_USTH/dashboard/sample_events.json)
+* [`dashboard/.streamlit/config.toml`](file: WAFBench_USTH/dashboard/.streamlit/config.toml)
+* [`dashboard/pages/1_Overview.py`](file: WAFBench_USTH/dashboard/pages/1_Overview.py)
+* [`dashboard/pages/2_Case_Explorer.py`](file: WAFBench_USTH/dashboard/pages/2_Case_Explorer.py)
+* [`dashboard/pages/3_Evidence_Viewer.py`](file: WAFBench_USTH/dashboard/pages/3_Evidence_Viewer.py)
+* [`dashboard/pages/4_Live_Demo.py`](file: WAFBench_USTH/dashboard/pages/4_Live_Demo.py)
 
 ---
 
@@ -81,6 +89,55 @@ Scientific correlation engine combining Client Observation, WAF Telemetry, and B
 
 ---
 
+### `dashboard/app.py`
+Main Streamlit analytics console (`:8501`) providing real-time forensic monitoring and benchmark visualization:
+* **Dual-Mode Data Source (Live Stream & Resilient Fallback):**
+  * Attempts direct connection to PostgreSQL `event-db` on the internal network.
+  * Automatically switches to `sample_events.json` (Demo Mode) when running without database containers or during offline development.
+* **Academic Evaluation Header:**
+  * Displays experiment run metadata badges: connection state (`[LIVE STREAM]` vs. `[DEMO MODE]`), CRS baseline (`C0 Baseline`, `PL1`), anomaly threshold (`5`), and evaluation modes (`Blocking` / `DetectionOnly`).
+* **KPI Metric Cards:**
+  * Computes total dispatched probes, evaluable vs. inconclusive counts, client-observed perimeter denials (HTTP 403), WAF-verified blocks, and empirical Blocking Rate ($BR$).
+* **Multi-Dimensional Case Slicing:**
+  * Interactive filters across Target Endpoint, Threat Class (`family_id`), Disruptive Action, HTTP Status Code, and Root/Matched CRS Rule ID search.
+* **Normalized Event Stream & Forensic Inspection Drawer:**
+  * Side-by-side layout: left table renders normalized event streams; right drawer provides comprehensive 3-tier forensic breakdown (Block A: Client Observation, Block B: WAF ModSecurity Evidence with score coloring, Block C: Backend Oracle Outcome).
+
+---
+
+### `dashboard/styles.py`
+Modular styling component enforcing academic visual hierarchy and navigation usability:
+* **Compact & Pinned Sidebar Rail:**
+  * Constrains sidebar width to a sleek, compact rail with clean spacing, avoiding screen bloat.
+  * Hides the manual collapse button while preserving expand triggers so the sidebar stays neatly anchored and accessible.
+  * Replaces default script filename labels with clean, human-readable titles (`WAFBench Console`).
+* **Streamlit Main Menu (`#MainMenu` / `...` Controls):**
+  * Retains essential developer and evaluation utilities in the top-right toolbar: **Rerun** (refreshing event queries without full browser reloads), **Settings** (runtime display options), **Record a screencast** (in-browser capture of attack traffic simulations for lab demos), **Clear cache** (re-querying PostgreSQL from scratch), and **Print** (PDF report exports).
+* **Pure Light Theme (Dark Mode & Theme Switching Removed):**
+  * Locks base theme to clean, high-contrast Light styling (`#ffffff`, `#f8f9fa`, `#dadce0`, `#202124`, `#1a73e8`) in `config.toml`, completely removing fragile theme-switching variables to eliminate contrast and UI layout glitches.
+
+---
+
+### `dashboard/sample_events.json`
+Rich offline mock dataset conforming to Table 4.3 `normalized_events`:
+* Contains 10 diverse benchmark test cases covering SQL Injection, Cross-Site Scripting (XSS), Remote Code Execution (RCE), Path Traversal, Edge-Case Benign queries, False Alarms (`FP_B`), Baseline Bypasses (`FN_B`), and Unattributed Perimeters (`I_UNATTRIBUTED`).
+
+---
+
+### `dashboard/pages/` (Multi-Page Specialized Views)
+Specialized analytics modules accessible via the sidebar navigation:
+* **`1_Overview.py` (Executive KPI & Benchmark Overview):**
+  * Computes Table 4.6 and Table 5.2 quantitative metrics: Empirical Blocking Rate ($BR$), Detection Rate ($DR$), Detection FPR ($FPR_D$), Blocking FPR ($FPR_B$).
+  * Generates separate confusion matrices for Blocking Mode and DetectionOnly Mode alongside validity breakdown tables.
+* **`2_Case_Explorer.py` (Multi-Dimensional Case Explorer):**
+  * Interactive data explorer allowing deep-dive filtering by threat category, execution state (`PASS`, `FAIL`, `INCONCLUSIVE`), and evaluation verdict.
+* **`3_Evidence_Viewer.py` (3-Tier Raw Evidence Viewer):**
+  * Side-by-side comparative inspection console displaying Tier 1 (Client probe request/response), Tier 2 (WAF anomaly score, disruptive action, and raw log SHA-256 fingerprint), and Tier 3 (Backend Oracle mutation and diagnostic).
+* **`4_Live_Demo.py` (Interactive Verification Sandbox):**
+  * Real-time probe generator dispatching live payloads (`POST`/`GET`) with custom `X-Request-ID` headers against the WAF Gateway (`:8080`) with latency measurements and response header inspection.
+
+---
+
 ## 3. Terminal Verification Commands
 
 You can test and view each component using these commands:
@@ -100,4 +157,10 @@ py WAFBench_USTH/telemetry/worker.py --demo
 
 # 5. Run Cross-Tier Correlation Engine Test Suite (9 Scenarios):
 py WAFBench_USTH/telemetry/correlation.py
+
+# 6-1. Build & Launch Evaluation Dashboard Container:
+docker compose -f WAFBench_USTH/docker-compose.yml up -d --build dashboard
+# 6-2. Build & Launch Dashboard when already accessing the directory:
+docker compose up -d --build dashboard
+# Access via browser at: http://localhost:8501
 ```

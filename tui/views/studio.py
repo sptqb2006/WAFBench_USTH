@@ -18,7 +18,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 RUNNER_DIR = os.path.join(REPO_ROOT, "runner")

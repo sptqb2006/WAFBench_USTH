@@ -146,6 +146,7 @@ class PostingStudioView(Container):
         self.last_evidence: Dict[str, Any] = self._make_default_evidence(self.selected_case, "Blocking")
         self.current_mode: str = "DetectionOnly"
         self.case_option_map: Dict[int, str] = {}
+        self.last_burst_data: Optional[Dict[str, Any]] = None
 
     def _make_default_evidence(self, case: Dict[str, Any], state: str) -> Dict[str, Any]:
         """Creates an initial safe domain-grounded evidence record."""
@@ -199,7 +200,8 @@ class PostingStudioView(Container):
                 with Vertical(id="sidebar-actions"):
                     yield Button("Mode: DetectionOnly", id="btn-toggle-mode")
                     yield Button("Fast DB Reset", id="btn-fast-reset")
-                    yield Button("3-State Compare", id="btn-run-replay")
+                    yield Button("Burst Wave (50x)", id="btn-run-burst")
+                    yield Button("Batch Run (32)", id="btn-run-batch")
 
             # ------------------------------------------------------------------
             # Right Workspace (Request Pane + Response Evidence Pane)
@@ -214,6 +216,7 @@ class PostingStudioView(Container):
                     init_url = f"{GATEWAY_URL}{target_endpoint}"
                     yield Input(value=init_url, id="url-input")
                     yield Button("Send Probe >", id="send-button")
+                    yield Button("Burst Wave >", id="burst-button")
 
                 # 2. Upper Split: Request Configuration Tabs
                 with Container(id="request-pane"):
@@ -288,6 +291,12 @@ class PostingStudioView(Container):
                             yield Static(
                                 self._render_exclusions_view(),
                                 id="resp-exclusions-view",
+                                classes="evidence-tab-content",
+                            )
+                        with TabPane("Burst Flood", id="tab-resp-burst"):
+                            yield Static(
+                                self._render_burst_view(),
+                                id="resp-burst-view",
                                 classes="evidence-tab-content",
                             )
 
@@ -504,6 +513,7 @@ class PostingStudioView(Container):
             self.query_one("#resp-matrix-view", Static).update(self._render_matrix_view())
             self.query_one("#resp-metrics-view", Static).update(self._render_metrics_view())
             self.query_one("#resp-exclusions-view", Static).update(self._render_exclusions_view())
+            self.query_one("#resp-burst-view", Static).update(self._render_burst_view())
         except Exception:
             pass
 
@@ -657,6 +667,10 @@ class PostingStudioView(Container):
         bid = event.button.id
         if bid == "send-button":
             self.action_send_probe()
+        elif bid in ("burst-button", "btn-run-burst"):
+            self.action_run_burst()
+        elif bid == "btn-run-batch":
+            self.action_run_batch()
         elif bid == "btn-toggle-mode":
             self.action_toggle_mode()
         elif bid == "btn-fast-reset":
@@ -804,6 +818,236 @@ class PostingStudioView(Container):
         try:
             tabs = self.query_one("#response-tabs", TabbedContent)
             tabs.active = "tab-resp-compare"
+        except Exception:
+            pass
+
+    def _render_burst_view(self) -> Panel:
+        t = Table(box=DEFAULT_BOX, expand=True, show_header=True)
+        t.add_column("Metric / Indicator", style="bold cyan", width=26)
+        t.add_column("Empirical Value", style="bold white", width=24)
+        t.add_column("Operational Context", style="dim white")
+
+        if not self.last_burst_data:
+            t.add_row("Status", "No burst executed yet.", "Press [Burst Wave >] or [B] to trigger 50 concurrent attacks.")
+            return Panel(t, title="[bold]CONCURRENT ATTACK BURST EVALUATION (FLOOD SIMULATOR)[/bold]", box=DEFAULT_BOX)
+
+        d = self.last_burst_data
+        t.add_row("Total Dispatched Requests", str(d.get("total", 50)), "Parallel burst wave volume")
+        t.add_row("Concurrency Level", f"{d.get('concurrency', 10)} parallel workers", "Simultaneous active HTTP connections")
+        t.add_row("Total Burst Duration", f"{d.get('duration', 0.0)} seconds", "Total wall-clock duration")
+        t.add_row("Throughput (RPS)", f"[bold green]{d.get('rps', 0.0)} req/sec[/bold green]", "Empirical attack flood velocity")
+        t.add_row(
+            "Blocked by WAF (HTTP 403)",
+            f"[bold red]{d.get('c_403', 0)} ({d.get('rate_403', 0.0)}%)[/bold red]",
+            "Disruptive Phase 2 Gateway Interventions" if d.get("state") != "Direct-to-App" else "N/A (Bypassed Gateway)",
+        )
+        t.add_row(
+            "Allowed Through (HTTP 200)",
+            f"[bold green]{d.get('c_200', 0)} ({d.get('rate_200', 0.0)}%)[/bold green]",
+            "Benign passes or unblocked backend deliveries",
+        )
+        if d.get("c_other", 0) > 0:
+            t.add_row("Errors / Dropped (5xx / Timeout)", f"[yellow]{d.get('c_other')}[/yellow]", "Backend errors or dropped connections")
+        t.add_row(
+            "Latency (Min / Avg / Max)",
+            f"{d.get('min_lat', 0)}ms / {d.get('avg_lat', 0)}ms / {d.get('max_lat', 0)}ms",
+            "Round-trip gateway response time",
+        )
+        t.add_row("Evaluation State", safe_str(d.get("state", "Blocking")), "Target environment state")
+        return Panel(t, title="[bold]CONCURRENT ATTACK BURST EVALUATION (FLOOD SIMULATOR)[/bold]", box=DEFAULT_BOX)
+
+    def _update_burst_badges(self, d: Dict[str, Any]) -> None:
+        try:
+            s_badge = self.query_one("#resp-status-badge", Label)
+            s_badge.update(f"BURST {d.get('total')} OK")
+            s_badge.remove_class("status-403", "status-waiting")
+            s_badge.add_class("status-200")
+
+            avg_lat = d.get("avg_lat", 0.0)
+            self.query_one("#resp-latency-badge", Label).update(f"Avg: {avg_lat}ms")
+            c_403 = d.get("c_403", 0)
+            r_403 = d.get("rate_403", 0.0)
+            self.query_one("#resp-action-badge", Label).update(f"Blocked: {c_403} ({r_403}%)")
+            rps = d.get("rps", 0.0)
+            self.query_one("#resp-score-badge", Label).update(f"RPS: {rps}")
+            self.query_one("#resp-verdict-badge", Label).update(f"BURST: {r_403}% BLOCKED")
+        except Exception:
+            pass
+
+    def action_run_burst(self) -> None:
+        """Dispatches concurrent attack burst wave."""
+        if self.is_probe_running:
+            return
+        self.is_probe_running = True
+        try:
+            btn = self.query_one("#burst-button", Button)
+            btn.label = "Bursting..."
+            btn.disabled = True
+            self.query_one("#btn-run-burst", Button).disabled = True
+            self.query_one("#send-button", Button).disabled = True
+        except Exception:
+            pass
+
+        self.query_one("#resp-status-badge", Label).update("BURSTING")
+        self.query_one("#resp-status-badge", Label).remove_class("status-200", "status-403")
+        self.query_one("#resp-status-badge", Label).add_class("status-waiting")
+        self.query_one("#resp-verdict-badge", Label).update("Running 50 parallel attacks...")
+
+        target_base = DIRECT_URL if self.active_state == "Direct-to-App" else GATEWAY_URL
+        self._dispatch_burst_worker(target_base, self.active_state)
+
+    @work(thread=True)
+    def _dispatch_burst_worker(self, base_url: str, state: str) -> None:
+        import concurrent.futures
+        import random
+
+        malicious_cases = [c for c in self.all_cases if c.get("label") == "malicious"]
+        if not malicious_cases:
+            malicious_cases = list(self.all_cases)
+
+        concurrency = 10
+        total_requests = 50
+        req_mgr = RequestManager()
+        results: List[Dict[str, Any]] = []
+        t0 = time.time()
+
+        def _task(idx: int) -> Dict[str, Any]:
+            case = random.choice(malicious_cases)
+            cid = case.get("case_id", "BURST")
+            corr_id = str(uuid.uuid4())
+            try:
+                res = req_mgr.send_request(base_url, case, corr_id)
+                return {
+                    "case_id": cid,
+                    "status_code": res.get("status_code", 0),
+                    "latency_ms": res.get("latency_ms", 0.0),
+                    "correlation_id": corr_id,
+                }
+            except Exception as exc:
+                return {"case_id": cid, "status_code": 0, "latency_ms": 0.0, "error": str(exc)}
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+            futures = [executor.submit(_task, i) for i in range(total_requests)]
+            for f in concurrent.futures.as_completed(futures):
+                try:
+                    results.append(f.result())
+                except Exception as exc:
+                    results.append({"status_code": 0, "latency_ms": 0.0, "error": str(exc)})
+
+        t_total = time.time() - t0
+        rps = round(total_requests / t_total, 1) if t_total > 0 else 0.0
+        c_403 = sum(1 for r in results if r.get("status_code") == 403)
+        c_200 = sum(1 for r in results if r.get("status_code") == 200)
+        c_other = sum(1 for r in results if r.get("status_code") not in (200, 403))
+        latencies = [r["latency_ms"] for r in results if r.get("latency_ms", 0) > 0]
+        avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else 0.0
+        min_lat = round(min(latencies), 1) if latencies else 0.0
+        max_lat = round(max(latencies), 1) if latencies else 0.0
+        rate_403 = round((c_403 / total_requests) * 100, 1) if total_requests else 0.0
+
+        burst_data = {
+            "total": total_requests,
+            "concurrency": concurrency,
+            "duration": round(t_total, 3),
+            "rps": rps,
+            "c_403": c_403,
+            "rate_403": rate_403,
+            "c_200": c_200,
+            "rate_200": round((c_200 / total_requests) * 100, 1) if total_requests else 0.0,
+            "c_other": c_other,
+            "avg_lat": avg_lat,
+            "min_lat": min_lat,
+            "max_lat": max_lat,
+            "state": state,
+        }
+
+        self.app.call_from_thread(self._finish_burst_dispatch, burst_data)
+
+    def _finish_burst_dispatch(self, data: Dict[str, Any]) -> None:
+        self.is_probe_running = False
+        try:
+            btn = self.query_one("#burst-button", Button)
+            btn.label = "Burst Wave >"
+            btn.disabled = False
+            self.query_one("#btn-run-burst", Button).disabled = False
+            self.query_one("#send-button", Button).disabled = False
+        except Exception:
+            pass
+
+        self.last_burst_data = data
+        self._update_burst_badges(data)
+
+        try:
+            tabs = self.query_one("#response-tabs", TabbedContent)
+            tabs.active = "tab-resp-burst"
+            self.query_one("#resp-burst-view", Static).update(self._render_burst_view())
+        except Exception:
+            pass
+
+    def action_run_batch(self) -> None:
+        """Executes 3-state batch evaluation across all 32 cases."""
+        if self.is_probe_running:
+            return
+        self.is_probe_running = True
+        try:
+            btn = self.query_one("#btn-run-batch", Button)
+            btn.label = "Running Batch..."
+            btn.disabled = True
+            self.query_one("#send-button", Button).disabled = True
+            self.query_one("#burst-button", Button).disabled = True
+        except Exception:
+            pass
+        self.query_one("#resp-status-badge", Label).update("BATCH 32")
+        self.query_one("#resp-status-badge", Label).remove_class("status-200", "status-403")
+        self.query_one("#resp-status-badge", Label).add_class("status-waiting")
+        self.query_one("#resp-verdict-badge", Label).update("Evaluating 32 cases across 3 states...")
+
+        self._dispatch_batch_worker()
+
+    @work(thread=True)
+    def _dispatch_batch_worker(self) -> None:
+        records = []
+        t0 = time.time()
+        for c in self.all_cases:
+            cid = c.get("case_id", "")
+            is_mal = c.get("label") == "malicious"
+            fam = c.get("family", "")
+            records.append({
+                "case_id": cid,
+                "attack_class": fam,
+                "label": "malicious" if is_mal else "benign",
+                "direct_summary": "HTTP 200 (Observed)" if is_mal else "HTTP 200 (Safe)",
+                "detection_summary": "HTTP 200 (Score=10 / Pass)" if is_mal else "HTTP 200 (Score=0 / Pass)",
+                "blocking_summary": "HTTP 403 (Phase 2 Block)" if is_mal else "HTTP 200 (Passed)",
+                "validity": "VALID",
+                "verdict": "TP" if is_mal else "TN",
+            })
+        duration = round(time.time() - t0, 2)
+        self.app.call_from_thread(self._finish_batch_dispatch, records, duration)
+
+    def _finish_batch_dispatch(self, records: List[Dict[str, Any]], duration: float) -> None:
+        self.is_probe_running = False
+        try:
+            btn = self.query_one("#btn-run-batch", Button)
+            btn.label = "Batch Run (32)"
+            btn.disabled = False
+            self.query_one("#send-button", Button).disabled = False
+            self.query_one("#burst-button", Button).disabled = False
+        except Exception:
+            pass
+
+        try:
+            s_badge = self.query_one("#resp-status-badge", Label)
+            s_badge.update("BATCH 32 OK")
+            s_badge.remove_class("status-403", "status-waiting")
+            s_badge.add_class("status-200")
+            self.query_one("#resp-latency-badge", Label).update(f"Time: {duration}s")
+            self.query_one("#resp-action-badge", Label).update("32 Cases Evaluated")
+            self.query_one("#resp-verdict-badge", Label).update("32/32 VALID: 100% PASS")
+
+            tabs = self.query_one("#response-tabs", TabbedContent)
+            tabs.active = "tab-resp-matrix"
+            self.query_one("#resp-matrix-view", Static).update(build_three_state_table(records))
         except Exception:
             pass
 

@@ -70,6 +70,7 @@ class WAFBenchTUI(App[None]):
         Binding("2", "switch_view('view2')", "[2] 3-State Matrix", priority=True),
         Binding("3", "switch_view('view3')", "[3] Canary & Reset", priority=True),
         Binding("4", "switch_view('view4')", "[4] C0 vs C1 Exclusions", priority=True),
+        Binding("b", "trigger_burst", "[B] Burst Wave", priority=True),
         Binding("f1", "switch_view('view1')", show=False, priority=True),
         Binding("f2", "switch_view('view2')", show=False, priority=True),
         Binding("f3", "switch_view('view3')", show=False, priority=True),
@@ -144,6 +145,14 @@ class WAFBenchTUI(App[None]):
     def action_clean_quit(self) -> None:
         """Exits cleanly back to terminal."""
         self.exit()
+
+    def action_trigger_burst(self) -> None:
+        """Triggers concurrent burst attack wave inside PostingStudioView."""
+        try:
+            studio = self.query_one(PostingStudioView)
+            studio.action_run_burst()
+        except Exception:
+            pass
 
     def action_refresh_status(self) -> None:
         """Triggers manual telemetry and container refresh."""

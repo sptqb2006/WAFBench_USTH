@@ -164,7 +164,7 @@ OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView, P
 #sidebar-actions Button {
     width: 100%;
     margin-bottom: 1;
-    height: 3;
+    height: 2;
     background: #313244;
     color: #cdd6f4;
     border: none;
@@ -246,6 +246,20 @@ OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView, P
 
 #send-button:hover {
     background: #b4befe;
+    color: #11111b;
+}
+
+#burst-button {
+    width: 16;
+    margin-left: 1;
+    background: #f38ba8;
+    color: #11111b;
+    text-style: bold;
+    border: none;
+}
+
+#burst-button:hover {
+    background: #eba0ac;
     color: #11111b;
 }
 

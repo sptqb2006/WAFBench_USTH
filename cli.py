@@ -228,16 +228,16 @@ def execute_probe_walkthrough(case: Dict[str, Any], state: str):
                 return
             wait_gateway_ready(GATEWAY_URL)
             mode_ok, mode_reason = mode_canary(GATEWAY_URL, state)
-            console.print(f"  [bold green]✓[/bold green] WAF Engine set to [bold yellow]{state}[/bold yellow] ({mode_reason})")
+            console.print(f"  [bold green][OK][/bold green] WAF Engine set to [bold yellow]{state}[/bold yellow] ({mode_reason})")
     else:
-        console.print(f"  [bold green]✓[/bold green] Target is [bold yellow]Direct-to-App (:8001)[/bold yellow] (WAF completely bypassed)")
+        console.print(f"  [bold green][OK][/bold green] Target is [bold yellow]Direct-to-App (:8001)[/bold yellow] (WAF completely bypassed)")
 
     # Reset Fixture
     with console.status("[bold cyan]Resetting database fixture to F1 state..."):
         try:
             r = requests.post(f"{DIRECT_URL}/health/reset", timeout=5.0)
             counts = get_fixture_counts()
-            console.print(f"  [bold green]✓[/bold green] Fixture reset complete ({r.json().get('reset_duration_ms', 0)} ms) -> DB: {counts}")
+            console.print(f"  [bold green][OK][/bold green] Fixture reset complete ({r.json().get('reset_duration_ms', 0)} ms) -> DB: {counts}")
         except Exception as e:
             console.print(f"  [bold yellow]![/bold yellow] Fixture reset warning: {e}")
 
@@ -521,10 +521,10 @@ def inspect_forensic_evidence(correlation_id: str):
     ))
 
     # 1. Look up WAF Audit Log
-    console.print("[bold yellow]► Looking up ModSecurity Audit Telemetry...[/bold yellow]")
+    console.print("[bold yellow][*] Looking up ModSecurity Audit Telemetry...[/bold yellow]")
     waf = find_waf_evidence(correlation_id, timeout=2.0)
     if waf.get("found"):
-        console.print(f"  [green]✓[/green] Found in WAF Audit Log (Source: {waf.get('source')})")
+        console.print(f"  [green][OK][/green] Found in WAF Audit Log (Source: {waf.get('source')})")
         console.print(f"  • Matched CRS Rules : [bold yellow]{', '.join(waf.get('matched_rule_ids') or [])}[/bold yellow]")
         console.print(f"  • Anomaly Score     : [bold cyan]{waf.get('anomaly_score')}[/bold cyan]")
         console.print(f"  • WAF HTTP Code     : [bold]{waf.get('waf_http_code')}[/bold]")
@@ -533,13 +533,13 @@ def inspect_forensic_evidence(correlation_id: str):
 
     # 2. Look up App Log
     console.print()
-    console.print("[bold yellow]► Checking Express Application Ingress...[/bold yellow]")
+    console.print("[bold yellow][*] Checking Express Application Ingress...[/bold yellow]")
     seen = seen_by_app(correlation_id, timeout=1.0)
     console.print(f"  • Propagated to Express: [{'green' if seen else 'yellow'}]{seen}[/]")
 
     # 3. Look up PostgreSQL event-db
     console.print()
-    console.print("[bold yellow]► Querying PostgreSQL event-db (normalized_events)...[/bold yellow]")
+    console.print("[bold yellow][*] Querying PostgreSQL event-db (normalized_events)...[/bold yellow]")
     rc, out, _ = docker_exec(
         "wb-event-db",
         ["psql", "-U", "telemetry_user", "-d", "wafbench_events", "-t", "-A", "-c",
@@ -644,14 +644,14 @@ def interactive_menu():
         ))
 
         console.print("[bold bright_white]Main Navigation Menu:[/bold bright_white]\n")
-        console.print("  [bold cyan][1][/bold cyan] 📊 System Architecture & 3-Tier Data Workflow Diagram")
-        console.print("  [bold cyan][2][/bold cyan] 🎯 Interactive Live Probe Walkthrough (Step-by-Step 3-Tier Trace)")
-        console.print("  [bold cyan][3][/bold cyan] ⚖️  3-State Comparative Analysis (Direct vs DetectionOnly vs Blocking)")
-        console.print("  [bold cyan][4][/bold cyan] 📂 Test Corpus Explorer (Browse & Inspect 32 Cases)")
-        console.print("  [bold cyan][5][/bold cyan] 🚀 Run Benchmark Suite & View Formal Metrics (DR, BR, FPR, RPR)")
-        console.print("  [bold cyan][6][/bold cyan] 🔍 Forensic Evidence Inspector (Query Transaction by UUID)")
-        console.print("  [bold cyan][7][/bold cyan] 🩺 System Health & Container Topology Status")
-        console.print("  [bold red][0][/bold red] 🚪 Exit\n")
+        console.print("  [bold cyan][1][/bold cyan] System Architecture & 3-Tier Data Workflow Diagram")
+        console.print("  [bold cyan][2][/bold cyan] Interactive Live Probe Walkthrough (Step-by-Step 3-Tier Trace)")
+        console.print("  [bold cyan][3][/bold cyan] 3-State Comparative Analysis (Direct vs DetectionOnly vs Blocking)")
+        console.print("  [bold cyan][4][/bold cyan] Test Corpus Explorer (Browse & Inspect 32 Cases)")
+        console.print("  [bold cyan][5][/bold cyan] Run Benchmark Suite & View Formal Metrics (DR, BR, FPR, RPR)")
+        console.print("  [bold cyan][6][/bold cyan] Forensic Evidence Inspector (Query Transaction by UUID)")
+        console.print("  [bold cyan][7][/bold cyan] System Health & Container Topology Status")
+        console.print("  [bold red][0][/bold red] Exit\n")
 
         choice = Prompt.ask("[bold yellow]Enter selection[/bold yellow]", choices=["1", "2", "3", "4", "5", "6", "7", "0"], default="1")
 

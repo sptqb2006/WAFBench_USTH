@@ -168,6 +168,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${DASHBOARD_PORT:-8501}:8501"
+    volumes:
+      - ./dashboard:/app
     environment:
       - EVENT_DB_HOST=event-db
       - EVENT_DB_PORT=5432

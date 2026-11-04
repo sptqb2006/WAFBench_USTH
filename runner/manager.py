@@ -12,11 +12,14 @@ import time
 import uuid
 import hashlib
 import subprocess
+import shutil
+import shlex
 
 import requests
 
 GATEWAY_CONTAINER = os.getenv("GATEWAY_CONTAINER", "wb-gateway")
 APP_CONTAINER = os.getenv("APP_CONTAINER", "wb-app")
+REMOTE_DOCKER_HOST = os.getenv("WAF_REMOTE_DOCKER_HOST", "webadmin@100.66.229.98")
 
 # Host header sent to every target. A numeric IP Host triggers CRS 920350 on every request,
 # so a name is used instead of the target address.
@@ -44,6 +47,14 @@ DETECTION_RULE_IDS = {"949110", "959100"} | {
 CANARY_ENDPOINT = "/search?q=%3Cscript%3Ealert(1)%3C/script%3E"
 
 
+def _run_docker_cmd(cmd: list, timeout: float = 10.0) -> subprocess.CompletedProcess:
+    """Runs docker locally or transparently over SSH if docker is not in local PATH."""
+    if shutil.which("docker"):
+        return subprocess.run(cmd, capture_output=True, timeout=timeout)
+    ssh_cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", REMOTE_DOCKER_HOST, shlex.join(cmd)]
+    return subprocess.run(ssh_cmd, capture_output=True, timeout=timeout)
+
+
 def docker_exec(container: str, args: list, timeout: float = 10.0, user: str = None) -> tuple:
     """Runs a command inside a container without a TTY. Returns (returncode, stdout, stderr)."""
     cmd = ["docker", "exec"]
@@ -51,7 +62,7 @@ def docker_exec(container: str, args: list, timeout: float = 10.0, user: str = N
         cmd += ["-u", user]
     cmd += [container] + args
     try:
-        p = subprocess.run(cmd, capture_output=True, timeout=timeout)
+        p = _run_docker_cmd(cmd, timeout=timeout)
         return p.returncode, p.stdout.decode("utf-8", "replace"), p.stderr.decode("utf-8", "replace")
     except Exception as e:
         return -1, "", str(e)
@@ -59,7 +70,7 @@ def docker_exec(container: str, args: list, timeout: float = 10.0, user: str = N
 
 def docker_logs(container: str, tail: int = 500, timeout: float = 10.0) -> str:
     try:
-        p = subprocess.run(["docker", "logs", "--tail", str(tail), container], capture_output=True, timeout=timeout)
+        p = _run_docker_cmd(["docker", "logs", "--tail", str(tail), container], timeout=timeout)
         return p.stdout.decode("utf-8", "replace") + p.stderr.decode("utf-8", "replace")
     except Exception:
         return ""

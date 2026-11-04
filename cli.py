@@ -1068,6 +1068,7 @@ def main():
     parser.add_argument("--batch", type=str, metavar="REVISION", help="Execute headless batch evaluation (e.g. C0 or C1)")
     parser.add_argument("--export", type=str, metavar="FILE", help="Destination path for batch CSV export")
     parser.add_argument("--tui", action="store_true", help="Launch full-screen interactive Textual TUI console")
+    parser.add_argument("--test-run", action="store_true", help="Run self-test headless verification and exit cleanly")
     parser.add_argument("--reps", type=int, default=3, help="Repetitions per test case in batch mode (default: 3)")
     parser.add_argument("--case", type=str, default=None, help="Filter by specific Case ID in batch mode")
     parser.add_argument("--state", type=str, choices=STATES, default=None, help="Filter by specific State in batch mode")
@@ -1108,7 +1109,32 @@ def main():
 
     # Route: Mode 3 (Textual TUI)
     if args.tui:
-        app = WAFBenchTUI()
+        if args.test_run:
+            from textual.widgets import ContentSwitcher
+            import asyncio
+            async def _verify() -> None:
+                app = WAFBenchTUI(ascii_only=args.ascii)
+                async with app.run_test() as pilot:
+                    await pilot.press("1")
+                    await pilot.pause()
+                    assert app.query_one("#view-switcher", ContentSwitcher).current == "view1"
+                    await pilot.press("2")
+                    await pilot.pause()
+                    assert app.query_one("#view-switcher", ContentSwitcher).current == "view2"
+                    await pilot.press("3")
+                    await pilot.pause()
+                    assert app.query_one("#view-switcher", ContentSwitcher).current == "view3"
+                    await pilot.press("4")
+                    await pilot.pause()
+                    assert app.query_one("#view-switcher", ContentSwitcher).current == "view4"
+                    await pilot.press("r")
+                    await pilot.pause()
+                    await pilot.press("q")
+                    await pilot.pause()
+            asyncio.run(_verify())
+            print("[OK] WAFBench TUI headless test run passed.")
+            return
+        app = WAFBenchTUI(ascii_only=args.ascii)
         app.run()
         return
 

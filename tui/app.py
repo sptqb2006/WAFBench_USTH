@@ -40,78 +40,44 @@ from tui.views.canary import CanaryResetView
 from tui.views.exclusions import RuleExclusionView
 from tui.views.inspector import EvidenceInspectorView
 from tui.views.matrix import OverviewMatrixView
+from tui.views.studio import PostingStudioView
 
 VIEW_NAMES = {
-    "view1": "View 1: Overview & 3-State Matrix",
-    "view2": "View 2: 3-Tier Evidence Inspector",
-    "view3": "View 3: Live Canary & Fast Reset Trigger",
-    "view4": "View 4: C0 vs C1 Rule Exclusion View",
+    "view1": "View 1: Posting API Client & Forensic Studio",
+    "view2": "View 2: Three-State Execution Matrix (Table 5.3)",
+    "view3": "View 3: Live Canary & Fast Reset Gate (UC-01 & UC-03)",
+    "view4": "View 4: C0 Baseline vs C1 Rule Exclusions (Table 4.4)",
 }
 
 
 class WAFBenchTUI(App[None]):
     """
     WAFBench Full-Screen Academic Interactive Console.
-    Orchestrates the 4 evaluation views, real-time Docker/ModSecurity telemetry,
-    and OpenSSH-safe deterministic presentation.
+    Inspired by Darren Burns' posting (https://github.com/darrenburns/posting),
+    featuring a modern, keyboard-centric terminal HTTP client layout:
+    - Left Sidebar: Collections & Requests tree (32 cases) with search filter
+    - Upper Workspace: URL bar with Method badge, target selector, and [Send Probe]
+    - Lower Workspace: Posting response status bar + 3-Tier evidence tabs
+    - Keybindings [1-4] to switch between Studio, Matrix, Canary, and Exclusions
     """
 
     TITLE = "WAFBench Empirical Evaluation Laboratory"
-    SUB_TITLE = "Nginx 1.26 / ModSec v3 / CRS v4.0.0"
+    SUB_TITLE = "Posting-Inspired Terminal HTTP Client (ModSec v3 / CRS v4.0.0)"
+    CSS_PATH = "posting.tcss"
 
     BINDINGS = [
-        Binding("1", "switch_view('view1')", "[1] Overview & Matrix", priority=True),
-        Binding("2", "switch_view('view2')", "[2] Evidence Inspector", priority=True),
+        Binding("1", "switch_view('view1')", "[1] Posting Studio", priority=True),
+        Binding("2", "switch_view('view2')", "[2] 3-State Matrix", priority=True),
         Binding("3", "switch_view('view3')", "[3] Canary & Reset", priority=True),
         Binding("4", "switch_view('view4')", "[4] C0 vs C1 Exclusions", priority=True),
+        Binding("f1", "switch_view('view1')", show=False, priority=True),
+        Binding("f2", "switch_view('view2')", show=False, priority=True),
+        Binding("f3", "switch_view('view3')", show=False, priority=True),
+        Binding("f4", "switch_view('view4')", show=False, priority=True),
         Binding("r", "refresh_status", "[R] Refresh", priority=True),
         Binding("q", "clean_quit", "[Q] Quit", priority=True),
     ]
 
-    CSS = """
-    Screen {
-        background: #0d1117;
-        color: #e6edf3;
-        layout: vertical;
-    }
-
-    #lab-header-widget {
-        height: auto;
-        dock: top;
-        margin: 0;
-        padding: 0;
-        border: none;
-    }
-
-    #content-container {
-        height: 1fr;
-        margin: 0 1;
-        padding: 0;
-        border: round #30363d;
-        background: #161b22;
-    }
-
-    #status-bar-widget {
-        dock: bottom;
-        height: 1;
-        background: #161b22;
-        color: #8b949e;
-        content-align: center middle;
-        border-top: solid #30363d;
-    }
-
-    Footer {
-        dock: bottom;
-        height: 1;
-        background: #0d1117;
-        color: #8b949e;
-    }
-
-    OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView {
-        height: 1fr;
-        padding: 0 1;
-    }
-    """
 
     def __init__(self, initial_view: str = "view1", ascii_only: bool = False, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -148,8 +114,8 @@ class WAFBenchTUI(App[None]):
 
         with Container(id="content-container"):
             with ContentSwitcher(initial=self.initial_view, id="view-switcher"):
-                yield OverviewMatrixView(id="view1")
-                yield EvidenceInspectorView(id="view2")
+                yield PostingStudioView(id="view1")
+                yield OverviewMatrixView(id="view2")
                 yield CanaryResetView(id="view3")
                 yield RuleExclusionView(id="view4")
 
@@ -169,6 +135,7 @@ class WAFBenchTUI(App[None]):
         try:
             switcher = self.query_one("#view-switcher", ContentSwitcher)
             switcher.current = view_id
+            self.set_focus(None)
             status_bar = self.query_one("#status-bar-widget", Static)
             status_bar.update(self._format_status_bar(view_id))
         except Exception:
@@ -311,17 +278,23 @@ def main() -> None:
             async with app.run_test() as pilot:
                 print("[OK] Textual application composed and mounted successfully.")
                 await pilot.press("1")
+                await pilot.pause()
                 assert app.query_one("#view-switcher", ContentSwitcher).current == "view1"
                 await pilot.press("2")
+                await pilot.pause()
                 assert app.query_one("#view-switcher", ContentSwitcher).current == "view2"
                 await pilot.press("3")
+                await pilot.pause()
                 assert app.query_one("#view-switcher", ContentSwitcher).current == "view3"
                 await pilot.press("4")
+                await pilot.pause()
                 assert app.query_one("#view-switcher", ContentSwitcher).current == "view4"
                 print("[OK] Keybindings 1, 2, 3, 4 verified cleanly.")
                 await pilot.press("r")
+                await pilot.pause()
                 print("[OK] Keybinding 'r' (Refresh) executed cleanly.")
                 await pilot.press("q")
+                await pilot.pause()
                 print("[OK] Keybinding 'q' (Quit) executed cleanly.")
 
         asyncio.run(_verify())

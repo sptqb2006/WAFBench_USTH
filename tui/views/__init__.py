@@ -13,8 +13,11 @@ from tui.views.canary import CanaryResetView, CanaryView
 from tui.views.inspector import EvidenceInspectorView, InspectorView
 from tui.views.overview import OverviewMatrixView, OverviewView
 from tui.views.regression import RegressionView, RuleExclusionView
+from tui.views.studio import PostingStudioView, StudioView
 
 __all__ = [
+    "PostingStudioView",
+    "StudioView",
     "OverviewView",
     "OverviewMatrixView",
     "InspectorView",
@@ -24,3 +27,4 @@ __all__ = [
     "RegressionView",
     "RuleExclusionView",
 ]
+

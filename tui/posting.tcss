@@ -1,0 +1,370 @@
+/* ==============================================================================
+   WAFBench Posting-Inspired Theme (Textual CSS)
+   Inspired by Darren Burns' posting (https://github.com/darrenburns/posting)
+   Strictly adheres to document/wafbench_agent_tui_guide.md and AGENTS.md:
+   - High-contrast, clean academic palette (Catppuccin Mocha / GitHub Dark Modern)
+   - Zero emojis, zero angle-bracket placeholders, robust markup escaping
+   ============================================================================== */
+
+Screen {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    layout: vertical;
+}
+
+#lab-header-widget {
+    height: auto;
+    dock: top;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+#content-container {
+    height: 1fr;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: #1e1e2e;
+}
+
+#status-bar-widget {
+    dock: bottom;
+    height: 1;
+    background: #11111b;
+    color: #8b949e;
+    content-align: center middle;
+    border-top: solid #313244;
+}
+
+OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView, PostingStudioView {
+    height: 1fr;
+    padding: 0;
+}
+
+
+/* ------------------------------------------------------------------------------
+   Top Header Bar
+   ------------------------------------------------------------------------------ */
+#app-header {
+    height: 3;
+    dock: top;
+    background: #181825;
+    border-bottom: solid #313244;
+    padding: 0 1;
+    layout: horizontal;
+    align: center middle;
+}
+
+#header-brand {
+    width: auto;
+    text-style: bold;
+    color: #89b4fa;
+    margin-right: 2;
+}
+
+#header-mode-badge {
+    width: auto;
+    background: #313244;
+    color: #f9e2af;
+    text-style: bold;
+    padding: 0 1;
+    margin-right: 2;
+}
+
+#header-env-badge {
+    width: auto;
+    background: #313244;
+    color: #a6adc8;
+    padding: 0 1;
+    margin-right: 2;
+}
+
+#header-services {
+    width: 1fr;
+    content-align: right middle;
+}
+
+/* ------------------------------------------------------------------------------
+   Main Split (Sidebar + Workspace)
+   ------------------------------------------------------------------------------ */
+#main-split {
+    layout: horizontal;
+    height: 1fr;
+    background: #1e1e2e;
+}
+
+/* ------------------------------------------------------------------------------
+   Left Sidebar: Collections / Requests Tree
+   ------------------------------------------------------------------------------ */
+#sidebar {
+    width: 38;
+    background: #181825;
+    border-right: solid #313244;
+    layout: vertical;
+}
+
+#sidebar-header-box {
+    height: 3;
+    background: #11111b;
+    border-bottom: solid #313244;
+    padding: 0 1;
+    layout: horizontal;
+    align: center middle;
+}
+
+#sidebar-title {
+    width: 1fr;
+    color: #89b4fa;
+    text-style: bold;
+}
+
+#sidebar-count-badge {
+    width: auto;
+    background: #313244;
+    color: #cdd6f4;
+    padding: 0 1;
+}
+
+#sidebar-filter {
+    margin: 1 1 0 1;
+    height: 3;
+    border: round #313244;
+    background: #11111b;
+    color: #cdd6f4;
+}
+
+#sidebar-filter:focus {
+    border: round #89b4fa;
+}
+
+#cases-list {
+    height: 1fr;
+    background: #181825;
+    color: #cdd6f4;
+    border: none;
+    margin: 1 0;
+    scrollbar-color: #313244 #181825;
+    scrollbar-size-vertical: 1;
+}
+
+#cases-list:focus {
+    border: none;
+}
+
+#sidebar-actions {
+    height: auto;
+    dock: bottom;
+    background: #11111b;
+    border-top: solid #313244;
+    padding: 1;
+    layout: vertical;
+}
+
+#sidebar-actions Button {
+    width: 100%;
+    margin-bottom: 1;
+    height: 3;
+    background: #313244;
+    color: #cdd6f4;
+    border: none;
+}
+
+#sidebar-actions Button:hover {
+    background: #45475a;
+    color: #ffffff;
+}
+
+/* ------------------------------------------------------------------------------
+   Right Main Workspace
+   ------------------------------------------------------------------------------ */
+#workspace {
+    width: 1fr;
+    layout: vertical;
+    background: #1e1e2e;
+}
+
+/* URL Bar Container (Posting Hallmark) */
+#url-bar-container {
+    height: 3;
+    layout: horizontal;
+    background: #181825;
+    border-bottom: solid #313244;
+    padding: 0 1;
+    align: center middle;
+}
+
+#method-badge {
+    width: 8;
+    height: 3;
+    content-align: center middle;
+    text-style: bold;
+    margin-right: 1;
+}
+
+.method-post {
+    background: #fab387;
+    color: #11111b;
+}
+
+.method-get {
+    background: #a6e3a1;
+    color: #11111b;
+}
+
+#state-select {
+    width: 22;
+    margin-right: 1;
+    background: #11111b;
+    border: round #313244;
+    color: #cdd6f4;
+}
+
+#state-select:focus {
+    border: round #89b4fa;
+}
+
+#url-input {
+    width: 1fr;
+    border: round #313244;
+    background: #11111b;
+    color: #cdd6f4;
+}
+
+#url-input:focus {
+    border: round #89b4fa;
+}
+
+#send-button {
+    width: 16;
+    margin-left: 1;
+    background: #89b4fa;
+    color: #11111b;
+    text-style: bold;
+    border: none;
+}
+
+#send-button:hover {
+    background: #b4befe;
+    color: #11111b;
+}
+
+/* ------------------------------------------------------------------------------
+   Upper Split: Request Configuration Pane
+   ------------------------------------------------------------------------------ */
+#request-pane {
+    height: 42%;
+    border-bottom: solid #313244;
+    background: #181825;
+    layout: vertical;
+}
+
+#request-tabs {
+    height: 1fr;
+}
+
+#request-body-text {
+    height: 1fr;
+    border: round #313244;
+    background: #11111b;
+    color: #cdd6f4;
+}
+
+#request-headers-view, #request-params-view, #request-profile-view {
+    height: 1fr;
+    padding: 1;
+    background: #11111b;
+    border: round #313244;
+    overflow-y: auto;
+}
+
+/* ------------------------------------------------------------------------------
+   Lower Split: Response & Evidence Pane
+   ------------------------------------------------------------------------------ */
+#response-status-bar {
+    height: 3;
+    layout: horizontal;
+    background: #11111b;
+    border-bottom: solid #313244;
+    padding: 0 1;
+    align: center middle;
+}
+
+.status-badge {
+    width: auto;
+    padding: 0 1;
+    text-style: bold;
+    margin-right: 1;
+    content-align: center middle;
+}
+
+.status-403 {
+    background: #f38ba8;
+    color: #11111b;
+}
+
+.status-200 {
+    background: #a6e3a1;
+    color: #11111b;
+}
+
+.status-waiting {
+    background: #f9e2af;
+    color: #11111b;
+}
+
+.metric-pill {
+    width: auto;
+    background: #313244;
+    color: #cdd6f4;
+    padding: 0 1;
+    margin-right: 1;
+    content-align: center middle;
+}
+
+.verdict-pill {
+    width: auto;
+    background: #cba6f7;
+    color: #11111b;
+    text-style: bold;
+    padding: 0 1;
+    margin-right: 1;
+    content-align: center middle;
+}
+
+#response-pane {
+    height: 58%;
+    background: #181825;
+    layout: vertical;
+}
+
+#response-tabs {
+    height: 1fr;
+}
+
+.evidence-tab-content {
+    height: 1fr;
+    padding: 1;
+    background: #11111b;
+    border: round #313244;
+    overflow-y: auto;
+}
+
+/* ------------------------------------------------------------------------------
+   Global Status Bar & Footer
+   ------------------------------------------------------------------------------ */
+#global-status-bar {
+    height: 1;
+    dock: bottom;
+    background: #11111b;
+    color: #a6adc8;
+    content-align: center middle;
+    border-top: solid #313244;
+}
+
+Footer {
+    dock: bottom;
+    height: 1;
+    background: #181825;
+    color: #a6adc8;
+}

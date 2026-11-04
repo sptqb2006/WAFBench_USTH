@@ -377,6 +377,13 @@ class TestHeadlessExecutionVerification(unittest.TestCase):
             f"Expected status table header not found in remote output: {res.stdout[:200]}",
         )
 
+    def test_tui_headless_test_run(self):
+        """Verifies full-screen Textual TUI headless initialization and keybinding cycle."""
+        wafbench_path = self._find_wafbench()
+        res = subprocess.run([wafbench_path, "--tui", "--test-run"], capture_output=True, text=True, timeout=15)
+        self.assertEqual(res.returncode, 0, f"wafbench --tui --test-run failed: {res.stderr}")
+        self.assertIn("WAFBench TUI headless test run passed", res.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

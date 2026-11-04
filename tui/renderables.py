@@ -15,7 +15,9 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from typing import Any, Dict, List
+from rich.align import Align
 from rich.columns import Columns
+from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
 
@@ -120,12 +122,19 @@ def build_lab_header(
         f"[bold]Active Mode:[/bold] [{mode_styled}] | [bold]Transport:[/bold] {transport}",
     )
 
-    return Panel(
+    w1 = "█ █ █ █▀█ █▀▀ █▀▄ █▀▀ █▄ █ █▀▀ █ █"
+    w2 = "▀▄▀▄▀ █ █ █   █▄▀ ██▄ █ ▀█ █▄▄ █▀█"
+    c1 = "█▀▀ █▀█ █▄ █ █▀  █▀█ █   █▀▀"
+    c2 = "█▄▄ █▄█ █ ▀█  ▀█ █▄█ █▄▄ ██▄"
+    art = f"[bold bright_cyan]{w1}[/]   [bold bright_yellow]{c1}[/]\n[bold bright_cyan]{w2}[/]   [bold bright_yellow]{c2}[/]"
+
+    content = Group(
+        Align.center(art),
         meta_table,
-        title="[bold cyan]══ [/][bold bright_cyan]WAFBENCH[/] [bold bright_yellow]CONSOLE[/][bold cyan] ══[/]",
-        title_align="center",
-        subtitle="[dim white]© USTH Cybersecurity[/dim white]",
-        subtitle_align="right",
+    )
+
+    return Panel(
+        content,
         box=DEFAULT_BOX,
         border_style="header.border",
     )

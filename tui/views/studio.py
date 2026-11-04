@@ -281,13 +281,13 @@ class PostingStudioView(Container):
                                 id="resp-compare-view",
                                 classes="evidence-tab-content",
                             )
-                        with TabPane("Table 5.3 Matrix", id="tab-resp-matrix"):
+                        with TabPane("3-State Matrix", id="tab-resp-matrix"):
                             yield Static(
                                 self._render_matrix_view(),
                                 id="resp-matrix-view",
                                 classes="evidence-tab-content",
                             )
-                        with TabPane("Table 5.2 Metrics", id="tab-resp-metrics"):
+                        with TabPane("Metrics Summary", id="tab-resp-metrics"):
                             yield Static(
                                 self._render_metrics_view(),
                                 id="resp-metrics-view",

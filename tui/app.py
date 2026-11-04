@@ -44,7 +44,7 @@ from tui.views.studio import PostingStudioView
 
 VIEW_NAMES = {
     "view1": "View 1: Posting API Client & Forensic Studio",
-    "view2": "View 2: Three-State Execution Matrix (Table 5.3)",
+    "view2": "View 2: Three-State Execution Matrix",
     "view3": "View 3: Live Canary & Fast Reset Gate (UC-01 & UC-03)",
     "view4": "View 4: C0 Baseline vs C1 Rule Exclusions (Table 4.4)",
 }

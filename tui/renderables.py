@@ -136,7 +136,7 @@ def build_three_state_table(case_records: List[Dict[str, Any]] | None = None) ->
     and Blocking (:8080) with explicit oracle observations and validity/verdict codes.
     """
     table = Table(
-        title="Table 5.3 — Three-State Execution & Cross-Tier Verdict Matrix",
+        title="Three-State Execution Matrix",
         title_justify="left",
         box=DEFAULT_BOX,
         expand=True,

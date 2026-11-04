@@ -122,8 +122,10 @@ def build_lab_header(
 
     return Panel(
         meta_table,
-        title="[bold]WAFBENCH Console (v1.0.0_CLI)[/bold]",
-        title_align="left",
+        title="[bold cyan]══ [/][bold bright_cyan]WAFBENCH[/] [bold bright_yellow]CONSOLE[/][bold cyan] ══[/]",
+        title_align="center",
+        subtitle="[dim white]© USTH Cybersecurity[/dim white]",
+        subtitle_align="right",
         box=DEFAULT_BOX,
         border_style="header.border",
     )

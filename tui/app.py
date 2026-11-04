@@ -43,7 +43,7 @@ from tui.views.matrix import OverviewMatrixView
 from tui.views.studio import PostingStudioView
 
 VIEW_NAMES = {
-    "view1": "View 1: Posting API Client & Forensic Studio",
+    "view1": "View 1: Posting Studio (v1.0.0_CLI)",
     "view2": "View 2: Three-State Execution Matrix",
     "view3": "View 3: Live Canary & Fast Reset Gate (UC-01 & UC-03)",
     "view4": "View 4: C0 Baseline vs C1 Rule Exclusions (Table 4.4)",
@@ -61,12 +61,14 @@ class WAFBenchTUI(App[None]):
     - Keybindings [1-4] to switch between Studio, Matrix, Canary, and Exclusions
     """
 
-    TITLE = "WAFBench Console (v1.0.0_CLI)"
+    TITLE = "WAFBench Console"
     SUB_TITLE = "Posting-Inspired Terminal HTTP Client (ModSec v3 / CRS v4.0.0)"
     CSS_PATH = "posting.tcss"
+    COMMAND_PALETTE_BINDING = "f12"
+    COMMAND_PALETTE_DISPLAY = "Setting"
 
     BINDINGS = [
-        Binding("1", "switch_view('view1')", "[1] Posting Studio", priority=True),
+        Binding("1", "switch_view('view1')", "[1] Posting Studio (v1.0.0_CLI)", priority=True),
         Binding("2", "switch_view('view2')", "[2] 3-State Matrix", priority=True),
         Binding("3", "switch_view('view3')", "[3] Canary & Reset", priority=True),
         Binding("4", "switch_view('view4')", "[4] C0 vs C1 Exclusions", priority=True),
@@ -77,6 +79,8 @@ class WAFBenchTUI(App[None]):
         Binding("f4", "switch_view('view4')", show=False, priority=True),
         Binding("r", "refresh_status", "[R] Refresh", priority=True),
         Binding("q", "clean_quit", "[Q] Quit", priority=True),
+        Binding("f12", "command_palette", "Setting", show=False, priority=True),
+        Binding("ctrl+p", "command_palette", "palette", show=False),
     ]
 
 

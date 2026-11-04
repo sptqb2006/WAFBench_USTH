@@ -73,6 +73,7 @@ class WAFBenchTUI(App[None]):
         Binding("3", "switch_view('view3')", "[3] Canary & Reset", priority=True),
         Binding("4", "switch_view('view4')", "[4] C0 vs C1 Exclusions", priority=True),
         Binding("b", "trigger_burst", "[B] Burst Wave", priority=True),
+        Binding("e", "trigger_export", "[E] Export CSV", priority=True),
         Binding("f1", "switch_view('view1')", show=False, priority=True),
         Binding("f2", "switch_view('view2')", show=False, priority=True),
         Binding("f3", "switch_view('view3')", show=False, priority=True),
@@ -155,6 +156,14 @@ class WAFBenchTUI(App[None]):
         try:
             studio = self.query_one(PostingStudioView)
             studio.action_run_burst()
+        except Exception:
+            pass
+
+    def action_trigger_export(self) -> None:
+        """Triggers 3-state execution matrix export to CSV."""
+        try:
+            studio = self.query_one(PostingStudioView)
+            studio.export_csv_results()
         except Exception:
             pass
 

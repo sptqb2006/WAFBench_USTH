@@ -175,6 +175,16 @@ OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView, P
     color: #ffffff;
 }
 
+#btn-export-csv {
+    background: #a6e3a1;
+    color: #11111b;
+    text-style: bold;
+}
+
+#btn-export-csv:hover {
+    background: #94e2d5;
+}
+
 /* ------------------------------------------------------------------------------
    Right Main Workspace
    ------------------------------------------------------------------------------ */
@@ -375,12 +385,28 @@ OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView, P
     height: 1fr;
 }
 
+#response-tabs TabPane {
+    height: 1fr;
+    padding: 0;
+}
+
 .evidence-tab-content {
     height: 1fr;
     padding: 1;
     background: #11111b;
     border: round #313244;
     overflow-y: auto;
+}
+
+.evidence-scroll-container {
+    height: 1fr;
+    padding: 0 1;
+    background: #11111b;
+    border: round #313244;
+}
+
+.evidence-scroll-container:focus {
+    border: round #89b4fa;
 }
 
 /* ------------------------------------------------------------------------------

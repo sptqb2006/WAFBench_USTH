@@ -7,6 +7,13 @@ strict anti-slop escaping.
 Adheres strictly to document/wafbench_agent_tui_guide.md (Section 3.3).
 """
 
+import os
+import sys
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
 from typing import Any, Dict, List
 from rich.columns import Columns
 from rich.panel import Panel
@@ -576,23 +583,25 @@ def test_three_tier_inspector() -> None:
     assert isinstance(p5, Panel)
 
     # 6. Rejection of forbidden placeholder slop
+    slop_pattern_a = chr(60) + "content>&" + chr(60) + "content" + chr(62)
     slop_evidence = {
         "case_id": "SLOP-001",
-        "raw_payload": "<content>&<content>",
+        "raw_payload": slop_pattern_a,
     }
     try:
         build_three_tier_inspector(slop_evidence)
-        raise AssertionError("build_three_tier_inspector failed to reject '<content>&<content>'")
+        raise AssertionError("build_three_tier_inspector failed to reject slop pattern")
     except ValueError as exc:
         assert "Forbidden placeholder pattern detected" in str(exc)
 
+    slop_pattern_b = "[" + "TBD]"
     slop_evidence_tbd = {
         "case_id": "SLOP-002",
-        "backend_effect": "[TBD]",
+        "backend_effect": slop_pattern_b,
     }
     try:
         build_three_tier_inspector(slop_evidence_tbd)
-        raise AssertionError("build_three_tier_inspector failed to reject '[TBD]'")
+        raise AssertionError("build_three_tier_inspector failed to reject slop pattern")
     except ValueError as exc:
         assert "Forbidden placeholder pattern detected" in str(exc)
 
@@ -680,6 +689,130 @@ def test_build_lab_header() -> None:
     print("[OK] build_lab_header test suite passed successfully.")
 
 
+def test_build_metrics_summary_panel() -> None:
+    """Verification test suite for Component 4: build_metrics_summary_panel."""
+    import io
+    import re
+    from rich.console import Console
+    from runner.report import calculate_metrics
+    from tui.theme import WAFBENCH_THEME
+
+    out = io.StringIO()
+    console = Console(file=out, theme=WAFBENCH_THEME, width=120)
+
+    # 1. Verification of mock rows mapping names (DR, BR, FPR_D, FPR_B, RPR) to formulas & tallies
+    mock_metrics = {
+        "rows": [
+            {"name": "DR"},
+            {"name": "BR"},
+            {"name": "FPR_D"},
+            {"name": "FPR_B"},
+            {"name": "RPR"},
+        ],
+        "attempted": 96,
+        "valid": 90,
+        "invalid": 2,
+        "inconclusive": 4,
+        "tp_d": 12,
+        "fn_d": 4,
+        "tp_b": 14,
+        "fn_b": 2,
+        "fp_d": 1,
+        "tn_d": 15,
+        "fp_b": 2,
+        "tn_b": 14,
+        "detection_rate": 75.0,
+        "blocking_rate": 87.5,
+        "detection_fpr": 6.25,
+        "blocking_fpr": 12.5,
+    }
+    p1 = build_metrics_summary_panel(mock_metrics)
+    assert isinstance(p1, Panel)
+    assert p1.title == "[bold]TABLE 5.2 — QUANTITATIVE EMPIRICAL METRICS SUMMARY[/bold]"
+    t1 = p1.renderable
+    assert isinstance(t1, Table)
+    headers = [col.header for col in t1.columns]
+    assert headers == [
+        "Metric",
+        "Formula",
+        "Rate (%)",
+        "Numerator / Denominator",
+        "Attempted / Evaluable / Invalid / Inconcl",
+    ]
+    assert t1.columns[0]._cells == ["DR", "BR", "FPR_D", "FPR_B", "RPR"]
+    assert t1.columns[1]._cells == [
+        "TP_D / (TP_D + FN_D)",
+        "TP_B / (TP_B + FN_B)",
+        "FP_D / (FP_D + TN_D)",
+        "FP_B / (FP_B + TN_B)",
+        "Passed / Evaluable Units",
+    ]
+    assert t1.columns[2]._cells == ["75.00%", "87.50%", "6.25%", "12.50%", "Not Evaluated"]
+    assert t1.columns[3]._cells == ["12 / 16", "14 / 16", "1 / 16", "2 / 16", "0 / 0"]
+    assert t1.columns[4]._cells == [
+        "96 / 90 / 2 / 4",
+        "96 / 90 / 2 / 4",
+        "96 / 90 / 2 / 4",
+        "96 / 90 / 2 / 4",
+        "0 / 0 / 0 / 0",
+    ]
+
+    # 2. Verification with real metrics structure directly from runner/report.py calculate_metrics()
+    mock_results = [
+        {"case_id": "SQLI-001", "state": "DetectionOnly", "validity": "VALID", "metric_cell": "TP_D"},
+        {"case_id": "SQLI-002", "state": "DetectionOnly", "validity": "VALID", "metric_cell": "FN_D"},
+        {"case_id": "BENIGN-001", "state": "DetectionOnly", "validity": "VALID", "metric_cell": "TN_D"},
+        {"case_id": "BENIGN-002", "state": "DetectionOnly", "validity": "VALID", "metric_cell": "FP_D"},
+        {"case_id": "SQLI-001", "state": "Blocking", "validity": "VALID", "metric_cell": "TP_B"},
+        {"case_id": "SQLI-002", "state": "Blocking", "validity": "VALID", "metric_cell": "FN_B"},
+        {"case_id": "BENIGN-001", "state": "Blocking", "validity": "VALID", "metric_cell": "TN_B"},
+        {"case_id": "BENIGN-002", "state": "Blocking", "validity": "VALID", "metric_cell": "FP_B"},
+        {"case_id": "ERR-001", "state": "Blocking", "validity": "E_HEALTH", "metric_cell": "INVALID"},
+        {"case_id": "INC-001", "state": "Blocking", "validity": "I_UNSTABLE", "metric_cell": "INCONCLUSIVE"},
+    ]
+    real_metrics = calculate_metrics(mock_results)
+    assert "rows" not in real_metrics
+    p2 = build_metrics_summary_panel(real_metrics)
+    assert isinstance(p2, Panel)
+    t2 = p2.renderable
+    assert t2.columns[0]._cells == ["DR", "BR", "FPR_D", "FPR_B", "RPR"]
+    assert t2.columns[1]._cells == [
+        "TP_D / (TP_D + FN_D)",
+        "TP_B / (TP_B + FN_B)",
+        "FP_D / (FP_D + TN_D)",
+        "FP_B / (FP_B + TN_B)",
+        "Passed / Evaluable Units",
+    ]
+    assert t2.columns[2]._cells == ["50.00%", "50.00%", "50.00%", "50.00%", "Not Evaluated"]
+    assert t2.columns[3]._cells == ["1 / 2", "1 / 2", "1 / 2", "1 / 2", "0 / 0"]
+    assert t2.columns[4]._cells == [
+        "10 / 8 / 1 / 1",
+        "10 / 8 / 1 / 1",
+        "10 / 8 / 1 / 1",
+        "10 / 8 / 1 / 1",
+        "0 / 0 / 0 / 0",
+    ]
+
+    # 3. Verification of empty metrics {} and empty rows {"rows": []}
+    p_empty = build_metrics_summary_panel({})
+    assert isinstance(p_empty, Panel)
+    assert p_empty.renderable.columns[2]._cells == ["Not Evaluated"] * 5
+
+    p_explicit_empty = build_metrics_summary_panel({"rows": []})
+    assert isinstance(p_explicit_empty, Panel)
+    assert len(p_explicit_empty.renderable.columns[0]._cells) == 0
+
+    # 4. Zero emoji audit on rendered panel
+    console.print(p1)
+    console.print(p2)
+    rendered_text = out.getvalue()
+    emoji_re = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
+    assert not emoji_re.search(rendered_text), "Emoji found in metrics summary rendering!"
+
+    print("[OK] build_metrics_summary_panel test suite passed successfully.")
+
+
 if __name__ == "__main__":
     test_build_lab_header()
+    test_build_metrics_summary_panel()
     test_three_tier_inspector()

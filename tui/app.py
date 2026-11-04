@@ -29,8 +29,8 @@ if RUNNER_DIR not in sys.path:
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Vertical
-from textual.widgets import ContentSwitcher, Footer, Static
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import ContentSwitcher, Footer, Label, Static
 
 import manager
 from tui.renderables import build_lab_header
@@ -43,7 +43,7 @@ from tui.views.matrix import OverviewMatrixView
 from tui.views.studio import PostingStudioView
 
 VIEW_NAMES = {
-    "view1": "View 1: Posting Studio (v1.0.0_CLI)",
+    "view1": "View 1: Posting Studio",
     "view2": "View 2: Three-State Execution Matrix",
     "view3": "View 3: Live Canary & Fast Reset Gate (UC-01 & UC-03)",
     "view4": "View 4: C0 Baseline vs C1 Rule Exclusions (Table 4.4)",
@@ -65,10 +65,10 @@ class WAFBenchTUI(App[None]):
     SUB_TITLE = "Posting-Inspired Terminal HTTP Client (ModSec v3 / CRS v4.0.0)"
     CSS_PATH = "posting.tcss"
     COMMAND_PALETTE_BINDING = "f12"
-    COMMAND_PALETTE_DISPLAY = "Setting  © USTH Cybersecurity"
+    COMMAND_PALETTE_DISPLAY = "Setting"
 
     BINDINGS = [
-        Binding("1", "switch_view('view1')", "[1] Posting Studio (v1.0.0_CLI)", priority=True),
+        Binding("1", "switch_view('view1')", "[1] Posting Studio", priority=True),
         Binding("2", "switch_view('view2')", "[2] 3-State Matrix", priority=True),
         Binding("3", "switch_view('view3')", "[3] Canary & Reset", priority=True),
         Binding("4", "switch_view('view4')", "[4] C0 vs C1 Exclusions", priority=True),
@@ -80,7 +80,7 @@ class WAFBenchTUI(App[None]):
         Binding("f4", "switch_view('view4')", show=False, priority=True),
         Binding("r", "refresh_status", "[R] Refresh", priority=True),
         Binding("q", "clean_quit", "[Q] Quit", priority=True),
-        Binding("f12", "command_palette", "Setting  © USTH Cybersecurity", show=False, priority=True),
+        Binding("f12", "command_palette", "Setting", show=False, priority=True),
         Binding("ctrl+p", "command_palette", "palette", show=False),
     ]
 
@@ -126,7 +126,11 @@ class WAFBenchTUI(App[None]):
                 yield RuleExclusionView(id="view4")
 
         yield Static(self._format_status_bar(self.initial_view), id="status-bar-widget")
-        yield Footer()
+        with Vertical(id="bottom-bar-container"):
+            yield Footer()
+            with Horizontal(id="subfooter-row"):
+                yield Label("v1.0.0_CLI", id="footer-version-label")
+                yield Label("© USTH Cybersecurity", id="footer-copyright-label")
 
     def _format_status_bar(self, active_view_id: str, extra_msg: str = "") -> str:
         view_title = VIEW_NAMES.get(active_view_id, active_view_id)

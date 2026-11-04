@@ -421,9 +421,33 @@ OverviewMatrixView, EvidenceInspectorView, CanaryResetView, RuleExclusionView, P
     border-top: solid #313244;
 }
 
-Footer {
+#bottom-bar-container {
     dock: bottom;
+    height: 2;
+    background: #181825;
+}
+
+Footer {
+    dock: none;
     height: 1;
     background: #181825;
+    color: #a6adc8;
+}
+
+#subfooter-row {
+    height: 1;
+    background: #11111b;
+    color: #6c7086;
+    padding: 0 1;
+}
+
+#footer-version-label {
+    dock: left;
+    color: #89b4fa;
+    text-style: bold;
+}
+
+#footer-copyright-label {
+    dock: right;
     color: #a6adc8;
 }

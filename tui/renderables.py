@@ -122,7 +122,7 @@ def build_lab_header(
 
     return Panel(
         meta_table,
-        title="[bold]WAFBENCH EMPIRICAL EVALUATION LABORATORY (Nginx 1.26 / ModSec v3 / CRS v4.0.0)[/bold]",
+        title="[bold]WAFBENCH Console (v1.0.0_CLI)[/bold]",
         title_align="left",
         box=DEFAULT_BOX,
         border_style="header.border",

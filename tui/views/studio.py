@@ -211,7 +211,13 @@ class PostingStudioView(Container):
                 with Horizontal(id="url-bar-container"):
                     method_str = self.selected_case.get("method", "POST")
                     yield Label(f"[{method_str}]", id="method-badge", classes=f"method-{method_str.lower()}")
-                    yield Select.from_values(STATES, value=self.active_state, id="state-select")
+                    yield Select.from_values(
+                        STATES,
+                        value=self.active_state,
+                        prompt="Select...",
+                        allow_blank=True,
+                        id="state-select",
+                    )
                     target_endpoint = self.selected_case.get("endpoint", "/api/login")
                     init_url = f"{GATEWAY_URL}{target_endpoint}"
                     yield Input(value=init_url, id="url-input")

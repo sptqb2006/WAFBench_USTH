@@ -61,7 +61,7 @@ class WAFBenchTUI(App[None]):
     - Keybindings [1-4] to switch between Studio, Matrix, Canary, and Exclusions
     """
 
-    TITLE = "WAFBench Empirical Evaluation Laboratory"
+    TITLE = "WAFBench Console (v1.0.0_CLI)"
     SUB_TITLE = "Posting-Inspired Terminal HTTP Client (ModSec v3 / CRS v4.0.0)"
     CSS_PATH = "posting.tcss"
 

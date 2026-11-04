@@ -960,6 +960,120 @@ def run_headless_batch(
 
 
 # ==============================================================================
+# CONCURRENT ATTACK BURST SIMULATOR (FLOOD / PARALLEL LOAD TESTING)
+# ==============================================================================
+
+def run_concurrent_burst(
+    concurrency: int = 10,
+    total_requests: int = 50,
+    family: Optional[str] = None,
+    target_state: str = "Blocking",
+) -> int:
+    """
+    Simulates concurrent attack waves (flood / stress test) against WAF or Direct App.
+    Dispatches multiple attack requests simultaneously using a ThreadPoolExecutor.
+    Reports real-time throughput (RPS), status code breakdown (403 vs 200), and latency distribution.
+    """
+    import concurrent.futures
+    import random
+
+    cases = load_cases()
+    if family:
+        cases = [c for c in cases if c.get("family", "").lower() == family.lower()]
+    # Default to malicious probes for attack burst
+    malicious_cases = [c for c in cases if c.get("label") == "malicious"]
+    if not malicious_cases:
+        malicious_cases = cases
+
+    if not malicious_cases:
+        console.print("[bold red][FAIL][/bold red] No attack test cases available for burst.")
+        return 1
+
+    is_waf = target_state != "Direct-to-App"
+    target_url = GATEWAY_URL if is_waf else DIRECT_URL
+
+    if is_waf:
+        prepare_state(target_state)
+
+    console.print()
+    console.print(f"[bold cyan]================================================================================[/bold cyan]")
+    console.print(f"[bold white]WAFBENCH CONCURRENT ATTACK BURST SIMULATOR[/bold white]")
+    console.print(f"[cyan]Target:[/] [bold]{target_url}[/] ([bold yellow]{target_state}[/])  |  [cyan]Attack Cases Pool:[/] {len(malicious_cases)}")
+    console.print(f"[cyan]Concurrency Wave:[/] [bold magenta]{concurrency} parallel workers[/]  |  [cyan]Total Probes:[/] [bold]{total_requests}[/]")
+    console.print(f"[bold cyan]================================================================================[/bold cyan]\n")
+
+    req_mgr = RequestManager()
+    results: List[Dict[str, Any]] = []
+    t_start = time.time()
+
+    def _worker_task(idx: int) -> Dict[str, Any]:
+        case = random.choice(malicious_cases)
+        cid = case.get("case_id", "BURST")
+        corr_id = str(uuid.uuid4())
+        res = req_mgr.send_request(target_url, case, corr_id)
+        return {
+            "req_index": idx,
+            "case_id": cid,
+            "status_code": res.get("status_code", 0),
+            "latency_ms": res.get("latency_ms", 0.0),
+            "correlation_id": corr_id,
+        }
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+        futures = [executor.submit(_worker_task, i + 1) for i in range(total_requests)]
+        for f in concurrent.futures.as_completed(futures):
+            try:
+                results.append(f.result())
+            except Exception as exc:
+                results.append({"status_code": 0, "latency_ms": 0.0, "error": str(exc)})
+
+    t_total = time.time() - t_start
+    rps = round(total_requests / t_total, 1) if t_total > 0 else 0.0
+
+    # Aggregate Statistics
+    c_403 = sum(1 for r in results if r.get("status_code") == 403)
+    c_200 = sum(1 for r in results if r.get("status_code") == 200)
+    c_other = sum(1 for r in results if r.get("status_code") not in (200, 403))
+    latencies = [r["latency_ms"] for r in results if r.get("latency_ms", 0) > 0]
+    avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else 0.0
+    min_lat = round(min(latencies), 1) if latencies else 0.0
+    max_lat = round(max(latencies), 1) if latencies else 0.0
+
+    # Table Output
+    table = Table(title="Concurrent Attack Burst Evaluation Summary", box=DEFAULT_BOX)
+    table.add_column("Metric / Indicator", style="bold cyan")
+    table.add_column("Empirical Value", style="bold white")
+    table.add_column("Operational Context", style="dim white")
+
+    table.add_row("Total Dispatched Requests", str(total_requests), "Parallel burst wave volume")
+    table.add_row("Concurrency Level", f"{concurrency} parallel workers", "Simultaneous active connections")
+    table.add_row("Total Burst Duration", f"{round(t_total, 3)} seconds", "Total wall-clock duration")
+    table.add_row("Throughput (RPS)", f"{rps} req/sec", "Empirical attack flood velocity")
+
+    rate_403 = round((c_403 / total_requests) * 100, 1) if total_requests else 0
+    rate_200 = round((c_200 / total_requests) * 100, 1) if total_requests else 0
+    table.add_row(
+        "Blocked by WAF (HTTP 403)",
+        f"[bold red]{c_403} ({rate_403}%)[/bold red]",
+        "Disruptive Phase 2 Gateway Interventions" if is_waf else "N/A (Bypassed Gateway)",
+    )
+    table.add_row(
+        "Allowed Through (HTTP 200)",
+        f"[bold green]{c_200} ({rate_200}%)[/bold green]",
+        "Benign passes or unblocked backend deliveries",
+    )
+    if c_other > 0:
+        table.add_row("Errors / Dropped (5xx / Timeout)", f"[yellow]{c_other}[/yellow]", "Backend errors or connection resets")
+
+    table.add_row("Latency (Min / Avg / Max)", f"{min_lat}ms / {avg_lat}ms / {max_lat}ms", "Round-trip gateway response time")
+
+    console.print()
+    console.print(table)
+    console.print()
+    return 0
+
+
+# ==============================================================================
 # MODE 1: INTERACTIVE MENU LOOP
 # ==============================================================================
 
@@ -1106,6 +1220,13 @@ def main():
     # status
     subparsers.add_parser("status", help="Show system health and container topology status")
 
+    # burst / concurrent attack waves
+    burst_parser = subparsers.add_parser("burst", help="Simulate concurrent attack waves (flood / parallel stress test)")
+    burst_parser.add_argument("--concurrency", "-c", type=int, default=10, help="Number of concurrent attack workers (default: 10)")
+    burst_parser.add_argument("--total", "-n", type=int, default=50, help="Total attack requests to dispatch (default: 50)")
+    burst_parser.add_argument("--family", type=str, default=None, choices=["SQL Injection", "Reflected XSS", "Path Traversal", "SSRF"], help="Filter by attack family")
+    burst_parser.add_argument("--state", type=str, choices=STATES, default="Blocking", help="Target evaluation state (default: Blocking)")
+
     args = parser.parse_args()
 
     # Route: Automated Headless Verification
@@ -1179,6 +1300,14 @@ def main():
         inspect_forensic_evidence_direct(args.uuid)
     elif args.command == "status":
         run_preflight_health_check()
+    elif args.command == "burst":
+        code = run_concurrent_burst(
+            concurrency=args.concurrency,
+            total_requests=args.total,
+            family=args.family,
+            target_state=args.state,
+        )
+        sys.exit(code)
     else:
         # Default Entrypoint: Mode 3 (Posting-Style Full-Screen Textual TUI Studio)
         if sys.stdin.isatty() and sys.stdout.isatty():

@@ -116,6 +116,9 @@ services:
       - waf_audit_logs:/var/log/modsec:ro
     environment:
       - LOG_FILE_PATH=/var/log/modsec/audit.log
+      - CRS_INBOUND_ANOMALY_THRESHOLD=${CRS_INBOUND_ANOMALY_THRESHOLD:-5}
+      - CRS_OUTBOUND_ANOMALY_THRESHOLD=${CRS_OUTBOUND_ANOMALY_THRESHOLD:-4}
+      - CORRELATION_TIMEOUT_S=${CORRELATION_TIMEOUT_S:-5}
       - EVENT_DB_HOST=event-db
       - EVENT_DB_PORT=5432
       - EVENT_DB_NAME=${EVENT_DB_NAME:-wafbench_events}

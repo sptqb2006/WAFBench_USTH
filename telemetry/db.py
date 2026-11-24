@@ -129,8 +129,68 @@ def upsert_client_event(record: Dict[str, Any]) -> bool:
         return False
 
 
+WAF_FIELDS = (
+    "waf_txn_id", "matched_rule_ids", "root_rule_id", "root_rule_name", "inbound_score",
+    "outbound_score", "disruptive_action", "interrupt_phase", "waf_engine_mode", "waf_http_code",
+    "waf_payload_snippet", "waf_matched_variable", "raw_log_ref",
+)
+
+
+def _execute(sql: str, params=None, fetch: bool = False):
+    """Runs one statement in its own transaction. Returns rows when fetch, else the row count."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            result = [dict(r) for r in cur.fetchall()] if fetch else cur.rowcount
+        conn.commit()
+        return result
+    finally:
+        conn.close()
+
+
+# Idempotent DDL for an event-db created from an older schema.sql.
+# schema.sql only runs on a fresh volume (docker-entrypoint-initdb.d), so the worker applies this at start.
+MIGRATIONS = """
+ALTER TABLE normalized_events ADD COLUMN IF NOT EXISTS outbound_score INT DEFAULT 0;
+ALTER TABLE normalized_events ADD COLUMN IF NOT EXISTS waf_engine_mode VARCHAR(32);
+ALTER TABLE normalized_events ADD COLUMN IF NOT EXISTS waf_http_code INT;
+ALTER TABLE normalized_events ADD COLUMN IF NOT EXISTS correlated_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE normalized_events ADD COLUMN IF NOT EXISTS runner_validity VARCHAR(32);
+ALTER TABLE normalized_events ADD COLUMN IF NOT EXISTS runner_invalid_reason TEXT;
+ALTER TABLE normalized_events ALTER COLUMN metric_cell SET DEFAULT 'PENDING_TELEMETRY';
+ALTER TABLE normalized_events ALTER COLUMN app_received SET DEFAULT NULL;
+CREATE TABLE IF NOT EXISTS waf_audit_events (
+    correlation_id VARCHAR(64) PRIMARY KEY,
+    waf_txn_id VARCHAR(64),
+    parsed JSONB NOT NULL,
+    received_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS ingest_offsets (
+    log_path TEXT PRIMARY KEY,
+    inode BIGINT,
+    file_offset BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_events_pending ON normalized_events(created_at) WHERE correlated_at IS NULL;
+"""
+
+
+def ensure_schema() -> bool:
+    """Brings an existing event-db up to the columns and tables the Correlation Engine needs."""
+    try:
+        _execute(MIGRATIONS)
+        return True
+    except Exception as e:
+        print(f"[!] Schema migration failed: {e}")
+        return False
+
+
 def update_waf_telemetry(correlation_id: str, waf_data: Dict[str, Any]) -> bool:
-    """Updates WAF-specific ModSecurity telemetry fields for a given correlation_id."""
+    """
+    Copies the parsed WAF telemetry onto the runner's row.
+    Returns False when no row with this correlation_id exists yet (the record stays staged).
+    """
     sql = """
     UPDATE normalized_events
     SET waf_txn_id = %(waf_txn_id)s,
@@ -138,53 +198,168 @@ def update_waf_telemetry(correlation_id: str, waf_data: Dict[str, Any]) -> bool:
         root_rule_id = %(root_rule_id)s,
         root_rule_name = %(root_rule_name)s,
         inbound_score = %(inbound_score)s,
+        outbound_score = %(outbound_score)s,
         disruptive_action = %(disruptive_action)s,
         interrupt_phase = %(interrupt_phase)s,
+        waf_engine_mode = %(waf_engine_mode)s,
+        waf_http_code = %(waf_http_code)s,
         waf_payload_snippet = %(waf_payload_snippet)s,
         waf_matched_variable = %(waf_matched_variable)s,
         raw_log_ref = %(raw_log_ref)s
     WHERE correlation_id = %(correlation_id)s;
     """
-    data = dict(waf_data)
+    data = {k: waf_data.get(k) for k in WAF_FIELDS}
     data["correlation_id"] = correlation_id
-    if isinstance(data.get("matched_rule_ids"), list):
-        data["matched_rule_ids"] = json.dumps(data["matched_rule_ids"])
+    data["matched_rule_ids"] = json.dumps(data["matched_rule_ids"] or [])
+    data["inbound_score"] = data["inbound_score"] or 0
+    data["outbound_score"] = data["outbound_score"] or 0
 
     try:
-        conn = get_connection()
-        with conn.cursor() as cur:
-            cur.execute(sql, data)
-        conn.commit()
-        conn.close()
-        return True
+        return _execute(sql, data) > 0
     except Exception as e:
         print(f"[!] Error updating WAF telemetry: {e}")
         return False
 
 
 def update_verdict(correlation_id: str, verdict_data: Dict[str, Any]) -> bool:
-    """Updates derived evaluation verdicts and confusion matrix cell assignments."""
+    """
+    Writes the Classification Function result and marks the row as correlated.
+    The first write keeps the runner's own validity (right-hand sides read the old row),
+    so a later re-correlation can tell runner codes from codes this engine assigned.
+    """
     sql = """
     UPDATE normalized_events
-    SET detected = %(detected)s,
+    SET runner_validity = CASE WHEN correlated_at IS NULL THEN validity ELSE runner_validity END,
+        runner_invalid_reason = CASE WHEN correlated_at IS NULL THEN invalid_reason ELSE runner_invalid_reason END,
+        detected = %(detected)s,
         backend_effect = %(backend_effect)s,
         validity = %(validity)s,
         invalid_reason = %(invalid_reason)s,
         verdict = %(verdict)s,
-        metric_cell = %(metric_cell)s
+        metric_cell = %(metric_cell)s,
+        correlated_at = CURRENT_TIMESTAMP
     WHERE correlation_id = %(correlation_id)s;
     """
-    data = dict(verdict_data)
+    data = {k: verdict_data.get(k) for k in
+            ("detected", "backend_effect", "validity", "invalid_reason", "verdict", "metric_cell")}
     data["correlation_id"] = correlation_id
     try:
-        conn = get_connection()
-        with conn.cursor() as cur:
-            cur.execute(sql, data)
-        conn.commit()
-        conn.close()
-        return True
+        return _execute(sql, data) > 0
     except Exception as e:
         print(f"[!] Error updating verdict: {e}")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 staging and Stage 3 join
+# ---------------------------------------------------------------------------
+
+def stage_waf_audit(parsed: Dict[str, Any]) -> bool:
+    """Stores a parsed audit record keyed by correlation_id (last record wins)."""
+    sql = """
+    INSERT INTO waf_audit_events (correlation_id, waf_txn_id, parsed)
+    VALUES (%(correlation_id)s, %(waf_txn_id)s, %(parsed)s)
+    ON CONFLICT (correlation_id) DO UPDATE SET
+        waf_txn_id = EXCLUDED.waf_txn_id,
+        parsed = EXCLUDED.parsed,
+        received_at = CURRENT_TIMESTAMP;
+    """
+    try:
+        _execute(sql, {
+            "correlation_id": parsed["correlation_id"],
+            "waf_txn_id": parsed.get("waf_txn_id"),
+            "parsed": json.dumps(parsed),
+        })
+        return True
+    except Exception as e:
+        print(f"[!] Error staging WAF audit record: {e}")
+        return False
+
+
+_JOINED_SELECT = """
+SELECT e.*, w.parsed AS waf_parsed, w.received_at AS waf_received_at,
+       EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - e.created_at)) AS age_s
+FROM normalized_events e
+LEFT JOIN waf_audit_events w ON w.correlation_id = e.correlation_id
+"""
+
+
+def fetch_joined_event(correlation_id: str) -> Optional[Dict[str, Any]]:
+    """One runner row joined with its staged WAF record (waf_parsed is None when absent)."""
+    rows = _execute(_JOINED_SELECT + " WHERE e.correlation_id = %s;", (correlation_id,), fetch=True)
+    return rows[0] if rows else None
+
+
+def fetch_ready_events(timeout_s: float, limit: int = 500) -> List[Dict[str, Any]]:
+    """
+    Pending rows (correlated_at IS NULL) that can be classified now:
+    either their WAF record has arrived, or the correlation timeout has passed without one.
+    """
+    sql = _JOINED_SELECT + """
+    WHERE e.correlated_at IS NULL
+      AND (w.correlation_id IS NOT NULL
+           OR e.created_at <= CURRENT_TIMESTAMP - make_interval(secs => %s))
+    ORDER BY e.id
+    LIMIT %s;
+    """
+    return _execute(sql, (float(timeout_s), int(limit)), fetch=True)
+
+
+def fetch_batch_events(batch_id: str) -> List[Dict[str, Any]]:
+    return _execute(_JOINED_SELECT + " WHERE e.batch_id = %s ORDER BY e.id;", (batch_id,), fetch=True)
+
+
+def get_offset(log_path: str) -> Optional[Dict[str, Any]]:
+    rows = _execute("SELECT inode, file_offset FROM ingest_offsets WHERE log_path = %s;", (log_path,), fetch=True)
+    return rows[0] if rows else None
+
+
+def save_offset(log_path: str, inode: int, file_offset: int) -> bool:
+    sql = """
+    INSERT INTO ingest_offsets (log_path, inode, file_offset)
+    VALUES (%s, %s, %s)
+    ON CONFLICT (log_path) DO UPDATE SET
+        inode = EXCLUDED.inode,
+        file_offset = EXCLUDED.file_offset,
+        updated_at = CURRENT_TIMESTAMP;
+    """
+    try:
+        _execute(sql, (log_path, inode, file_offset))
+        return True
+    except Exception as e:
+        print(f"[!] Error saving ingest offset: {e}")
+        return False
+
+
+def save_batch_metrics(metrics: Dict[str, Any]) -> bool:
+    """Upserts one evaluation_metrics row (Table 4.6) per batch."""
+    sql = """
+    INSERT INTO evaluation_metrics (
+        batch_id, config_revision, total_attempted, total_evaluable, total_invalid, total_inconclusive,
+        detection_rate, blocking_rate, detection_fpr, blocking_fpr, regression_pass_rate
+    ) VALUES (
+        %(batch_id)s, %(config_revision)s, %(total_attempted)s, %(total_evaluable)s, %(total_invalid)s,
+        %(total_inconclusive)s, %(detection_rate)s, %(blocking_rate)s, %(detection_fpr)s, %(blocking_fpr)s,
+        %(regression_pass_rate)s
+    )
+    ON CONFLICT (batch_id) DO UPDATE SET
+        config_revision = EXCLUDED.config_revision,
+        total_attempted = EXCLUDED.total_attempted,
+        total_evaluable = EXCLUDED.total_evaluable,
+        total_invalid = EXCLUDED.total_invalid,
+        total_inconclusive = EXCLUDED.total_inconclusive,
+        detection_rate = EXCLUDED.detection_rate,
+        blocking_rate = EXCLUDED.blocking_rate,
+        detection_fpr = EXCLUDED.detection_fpr,
+        blocking_fpr = EXCLUDED.blocking_fpr,
+        regression_pass_rate = EXCLUDED.regression_pass_rate,
+        created_at = CURRENT_TIMESTAMP;
+    """
+    try:
+        _execute(sql, metrics)
+        return True
+    except Exception as e:
+        print(f"[!] Error saving batch metrics: {e}")
         return False
 
 

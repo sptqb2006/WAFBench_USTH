@@ -134,6 +134,8 @@ services:
   event-db:
     container_name: wb-event-db
     image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:${EVENT_DB_PORT:-5432}:5432"
     environment:
       - POSTGRES_DB=${EVENT_DB_NAME:-wafbench_events}
       - POSTGRES_USER=${EVENT_DB_USER:-telemetry_user}

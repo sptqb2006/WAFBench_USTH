@@ -14,12 +14,17 @@ router.get('/file', (req, res) => {
   }
 
   const filename = Array.isArray(rawFilename) ? rawFilename[0] : String(rawFilename);
-
   // VULNERABLE: path.join without sanitization allows directory traversal (CWE-22)
-  // __dirname is /app/src/routes, so ../../public/downloads resolves to /app/public/downloads
-  const baseDirectory = path.join(__dirname, '../../public/downloads');
-  const filePath = path.join(baseDirectory, filename);
+  // Ensure robust path resolution regardless of working directory
+  const baseDirectory = fs.existsSync(path.resolve(__dirname, '../../public/downloads'))
+    ? path.resolve(__dirname, '../../public/downloads')
+    : path.resolve(__dirname, '../public/downloads');
 
+  // Normalize nested dot bypass payload (e.g. ....// -> ../)
+  const targetPath = filename.includes('....//')
+    ? filename.replace(/\.\.\.\.\/\//g, '../')
+    : filename;
+  const filePath = path.join(baseDirectory, targetPath);
   fs.readFile(filePath, (err, data) => {
     if (err) {
       return res.status(404).json({

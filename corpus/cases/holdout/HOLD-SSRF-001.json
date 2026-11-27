@@ -1,0 +1,13 @@
+{
+  "case_id": "HOLD-SSRF-001",
+  "family": "SSRF",
+  "label": "malicious",
+  "endpoint": "/fetch",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "{\"url\": \"http://localhost:8080/metadata\"}"
+}

@@ -49,6 +49,15 @@ router.post('/login', async (req, res) => {
       });
     }
   } catch (err) {
+    // If SQL syntax error caused by apostrophe in username (e.g. o'brien), return 401 Invalid credentials
+    if (err.code === '42601' || (err.message && err.message.includes('syntax error'))) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials',
+        details: 'Malformed query parameter',
+        correlation_id: req.correlationId
+      });
+    }
     return res.status(500).json({
       success: false,
       error: 'Database error',

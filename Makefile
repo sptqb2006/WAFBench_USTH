@@ -47,20 +47,20 @@ reset:
 mode-detection:
 	@echo "[*] Activating WAF mode: DetectionOnly"
 	@sed -i 's/^WAF_RULE_ENGINE=.*/WAF_RULE_ENGINE=DetectionOnly/' .env 2>/dev/null || true
-	@docker exec -it wb-gateway sed -i 's/SecRuleEngine .*/SecRuleEngine DetectionOnly/' /etc/modsecurity.d/main.conf 2>/dev/null || true
+	@docker exec wb-gateway sed -i 's/SecRuleEngine .*/SecRuleEngine DetectionOnly/' /etc/modsecurity.d/main.conf 2>/dev/null || true
 	@$(MAKE) reload-waf
 	@echo "[OK] DetectionOnly mode successfully activated."
 
 mode-blocking:
 	@echo "[*] Activating WAF mode: Blocking (On)"
 	@sed -i 's/^WAF_RULE_ENGINE=.*/WAF_RULE_ENGINE=On/' .env 2>/dev/null || true
-	@docker exec -it wb-gateway sed -i 's/SecRuleEngine .*/SecRuleEngine On/' /etc/modsecurity.d/main.conf 2>/dev/null || true
+	@docker exec wb-gateway sed -i 's/SecRuleEngine .*/SecRuleEngine On/' /etc/modsecurity.d/main.conf 2>/dev/null || true
 	@$(MAKE) reload-waf
 	@echo "[OK] Blocking mode successfully activated."
 
 reload-waf:
 	@echo "[*] Reloading Nginx & ModSecurity configuration..."
-	@docker exec -it wb-gateway nginx -s reload 2>/dev/null || true
+	@docker exec wb-gateway nginx -s reload 2>/dev/null || true
 
 logs:
 	$(COMPOSE) logs -f

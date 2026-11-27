@@ -1,0 +1,13 @@
+{
+  "case_id": "SQLI-002",
+  "family": "SQL Injection",
+  "label": "malicious",
+  "endpoint": "/login",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "{\"username\": \"' OR '1'='1' -- \", \"password\": \"x\"}"
+}

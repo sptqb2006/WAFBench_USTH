@@ -14,7 +14,11 @@ router.post('/fetch', async (req, res) => {
 
   try {
     // VULNERABLE: Dispatches outbound HTTP GET request to user-supplied URL (SSRF - CWE-918)
-    const response = await axios.get(url, {
+    // In Docker container environment, loopback requests to port 8080 target the internal mock container
+    const mockBase = process.env.MOCK_SERVICE_URL || 'http://mock-internal:8080';
+    const dispatchUrl = url.replace(/^http:\/\/(?:127\.0\.0\.1|localhost):8080/, mockBase);
+
+    const response = await axios.get(dispatchUrl, {
       timeout: 3000,
       headers: {
         'X-Request-ID': req.correlationId,

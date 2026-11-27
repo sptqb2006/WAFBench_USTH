@@ -1,0 +1,12 @@
+{
+  "case_id": "HOLD-PATH-001-B1",
+  "family": "Path Traversal",
+  "label": "benign",
+  "endpoint": "/file?filename=company_guidelines.pdf",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

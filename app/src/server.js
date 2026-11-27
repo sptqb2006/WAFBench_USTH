@@ -16,15 +16,7 @@ const fetchRoutes = require('./routes/fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Body Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Static files (legitimate download path)
-app.use('/public', express.static(path.join(__dirname, '../public')));
-
-// Correlation ID & Single-Line JSON Logger Middleware
+// Correlation ID & Single-Line JSON Logger Middleware (Registered first)
 app.use((req, res, next) => {
   const correlationId = req.headers['x-request-id'] || uuidv4();
   req.correlationId = correlationId;
@@ -43,12 +35,20 @@ app.use((req, res, next) => {
       duration_ms: duration,
       ip: req.ip || req.connection.remoteAddress,
     };
-    // Emit single-line JSON log to stdout as required by telemetry contract
+    // Output single-line JSON log to stdout as required by telemetry specifications
     console.log(JSON.stringify(logEntry));
   });
 
   next();
 });
+
+// Body Parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Static files (legitimate download path)
+app.use('/public', express.static(path.join(__dirname, '../public')));
 
 // Mount Routes
 app.use('/', healthRoutes);

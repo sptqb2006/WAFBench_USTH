@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-016-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=false+positive+rate+analysis",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "PATH-004-B2",
+  "family": "Path Traversal",
+  "label": "edge",
+  "endpoint": "/file?filename=report.2023.v1.pdf",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "",
+  "expected_status": 404
+}

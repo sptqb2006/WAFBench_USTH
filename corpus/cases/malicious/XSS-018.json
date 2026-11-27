@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-018",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cmath%3E%3Cmtext%3E%3C/mtext%3E%3Cscript%3Ealert(1)%3C/script%3E%3C/math%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

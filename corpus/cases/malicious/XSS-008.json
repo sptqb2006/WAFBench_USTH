@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-008",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cimg/src=x/onerror=alert(1)%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

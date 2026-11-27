@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-008-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=docker+bridge+network+isolation",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

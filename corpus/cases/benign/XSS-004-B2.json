@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-004-B2",
+  "family": "Reflected XSS",
+  "label": "edge",
+  "endpoint": "/search?q=price+equals+50+USD+discount",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

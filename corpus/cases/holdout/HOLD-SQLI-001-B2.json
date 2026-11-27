@@ -10,5 +10,5 @@
     "Host": "{host}"
   },
   "body": "{\"username\": \"mcdonald's_corp\", \"password\": \"corp_pwd_secure\"}",
-  "expected_status": [200, 401]
+  "expected_status": 401
 }

@@ -1,0 +1,13 @@
+{
+  "case_id": "SSRF-010",
+  "family": "SSRF",
+  "label": "malicious",
+  "endpoint": "/fetch",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "{\"url\": \"http://MOCK-INTERNAL:8080/metadata\"}"
+}

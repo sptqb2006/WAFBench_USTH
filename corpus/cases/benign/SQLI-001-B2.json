@@ -10,5 +10,5 @@
     "Host": "{host}"
   },
   "body": "{\"username\": \"o'brien\", \"password\": \"password123\"}",
-  "expected_status": [200, 401]
+  "expected_status": 401
 }

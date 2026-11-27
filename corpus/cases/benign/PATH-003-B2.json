@@ -1,0 +1,12 @@
+{
+  "case_id": "PATH-003-B2",
+  "family": "Path Traversal",
+  "label": "edge",
+  "endpoint": "/file?filename=./company_guidelines.pdf",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

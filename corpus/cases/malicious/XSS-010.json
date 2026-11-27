@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-010",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cinput%20autofocus%20onfocus=alert(1)%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

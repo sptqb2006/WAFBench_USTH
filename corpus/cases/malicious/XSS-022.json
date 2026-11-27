@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-022",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cdiv%20onmouseover=alert(1)%3Ehover%3C/div%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

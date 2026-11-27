@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-012",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Ca%20href=%22javascript:alert(1)%22%3Eclick%3C/a%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

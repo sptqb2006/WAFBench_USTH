@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-009",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cdetails%20open%20ontoggle=alert(1)%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-018-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=waf+blocking+enforcement+mode",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

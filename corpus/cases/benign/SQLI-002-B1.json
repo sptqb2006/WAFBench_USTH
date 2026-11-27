@@ -9,5 +9,5 @@
     "X-Request-ID": "{correlation_id}",
     "Host": "{host}"
   },
-  "body": "{\"username\": \"bob\", \"password\": \"bob_pass_secret\"}"
+  "body": "{\"username\": \"bob\", \"password\": \"bob_pass_simple\"}"
 }

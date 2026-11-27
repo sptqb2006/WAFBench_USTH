@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-005-B2",
+  "family": "Reflected XSS",
+  "label": "edge",
+  "endpoint": "/search?q=book+title%3A+Alice's+Adventures",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

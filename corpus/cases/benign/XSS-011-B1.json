@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-011-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=rest+api+json+validation",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

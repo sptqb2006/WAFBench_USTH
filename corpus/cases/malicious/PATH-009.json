@@ -1,0 +1,12 @@
+{
+  "case_id": "PATH-009",
+  "family": "Path Traversal",
+  "label": "malicious",
+  "endpoint": "/file?filename=downloads/../../../../../etc/passwd",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-019",
+  "family": "Reflected XSS",
+  "label": "malicious",
+  "endpoint": "/search?q=%3Cform%3E%3Cbutton%20formaction=%22javascript:alert(1)%22%3Ego%3C/button%3E%3C/form%3E",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

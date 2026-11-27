@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-003-B2",
+  "family": "Reflected XSS",
+  "label": "edge",
+  "endpoint": "/search?q=100+percent+secure+web+guide",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}

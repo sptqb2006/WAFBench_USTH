@@ -1,0 +1,14 @@
+{
+  "case_id": "SQLI-009-B1",
+  "family": "SQL Injection",
+  "label": "benign",
+  "endpoint": "/login",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": "{\"username\": \"admin\", \"password\": \"wrong_admin_pass\"}",
+  "expected_status": 401
+}

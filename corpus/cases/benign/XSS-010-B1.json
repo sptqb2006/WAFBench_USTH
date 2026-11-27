@@ -1,0 +1,12 @@
+{
+  "case_id": "XSS-010-B1",
+  "family": "Reflected XSS",
+  "label": "benign",
+  "endpoint": "/search?q=automated+benchmark+methodology",
+  "method": "GET",
+  "headers": {
+    "X-Request-ID": "{correlation_id}",
+    "Host": "{host}"
+  },
+  "body": ""
+}
